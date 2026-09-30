@@ -30,7 +30,7 @@ export function normalizePhone(input: string): string | null {
   return null
 }
 
-/** Collapses runs of whitespace so "  Київ   " and "Київ" are stored the same */
+/** Collapses runs of whitespace so "  Біла  Церква " and "Біла Церква" are stored the same */
 const singleLine = (value: string) => value.trim().replace(/\s+/g, " ")
 
 export const customerSchema = z.object({
@@ -52,7 +52,7 @@ export const customerSchema = z.object({
           code: "custom",
           message: value.trim()
             ? "Перевірте номер: наприклад, 050 123 45 67 або +380 50 123 45 67"
-            : "Вкажіть телефон, щоб менеджер міг вам зателефонувати",
+            : "Вкажіть телефон, щоб менеджер міг зв'язатися з вами в Telegram",
         })
         return z.NEVER
       }

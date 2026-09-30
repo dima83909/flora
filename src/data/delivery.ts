@@ -1,29 +1,28 @@
-export type DeliveryZone = {
-  area: string
-  price: number
-  time: string
-  /** Price is a starting point, final cost agreed with the manager */
-  priceFrom?: boolean
-}
-
-export const deliveryZones: DeliveryZone[] = [
-  { area: "Центр, Поділ, Печерськ", price: 150, time: "від 60 хвилин" },
-  { area: "Інші райони правого берега", price: 200, time: "від 90 хвилин" },
-  { area: "Лівий берег", price: 250, time: "від 2 годин" },
-  { area: "Передмістя до 20 км", price: 450, time: "час узгоджуємо окремо", priceFrom: true },
-]
+/*
+ * Delivery works across Ukraine. Address, date, time, delivery cost and payment
+ * are agreed with each customer in Telegram after the order is placed, so the
+ * site shows how it works rather than fixed zones or prices.
+ */
 
 export const deliverySteps = [
   {
     title: "Ви оформлюєте замовлення",
-    text: "Обираєте букет і залишаєте ім'я та телефон. Менеджер передзвонить і узгодить адресу, дату, час і оплату.",
+    text: "Обираєте букет і залишаєте ім'я, телефон і місто. Менеджер напише вам у Telegram, щоб узгодити деталі.",
   },
   {
     title: "Флорист збирає букет",
-    text: "За годину до виїзду надсилаємо фото у Viber або Telegram. Ви підтверджуєте або просите змінити.",
+    text: "Перед відправкою надсилаємо фото саме вашого букета в Telegram. Ви підтверджуєте або просите змінити.",
   },
   {
-    title: "Кур’єр привозить квіти",
-    text: "Букет їде у вертикальній коробці з водою. Після вручення повідомимо, що все отримано.",
+    title: "Букет вирушає до вас",
+    text: "Доставляємо по всій Україні у спосіб і час, які ми з вами узгодили.",
   },
+]
+
+/** What the manager agrees with the customer in Telegram */
+export const agreedInTelegram = [
+  "Адресу доставки",
+  "Дату й зручний час",
+  "Вартість доставки до вашого міста",
+  "Спосіб оплати",
 ]

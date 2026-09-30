@@ -4,6 +4,7 @@ import { connection } from "next/server"
 import { CatalogView } from "@/components/catalog/catalog-view"
 import { categoryHref, isGiftCategory } from "@/config/site"
 import { catalogTitle, isRefinedListing, parseFilters } from "@/lib/catalog"
+import { canonicalPath } from "@/lib/structured-data"
 import { getCategories, getProducts } from "@/server/catalog"
 
 const listFormat = new Intl.ListFormat("uk", { type: "conjunction" })
@@ -23,9 +24,9 @@ export async function generateMetadata({ searchParams }: PageProps<"/bouquets">)
 
   const title = catalogTitle(category)
   const description = category
-    ? `${category.description}. Доставка по Києву${isGiftCategory(category.slug) ? " разом із букетом або окремо" : ", фото букета перед відправкою"}.`
-    : `${listFormat.format(categories.map((c, i) => (i ? c.name.toLocaleLowerCase("uk") : c.name)))}. Доставка по Києву, фото букета перед відправкою.`
-  const canonical = category ? categoryHref(category.slug) : "/bouquets"
+    ? `${category.description}. Доставка по Україні${isGiftCategory(category.slug) ? " разом із букетом або окремо" : ", фото букета перед відправкою"}.`
+    : `${listFormat.format(categories.map((c, i) => (i ? c.name.toLocaleLowerCase("uk") : c.name)))}. Доставка по Україні, фото букета перед відправкою.`
+  const canonical = canonicalPath(category ? categoryHref(category.slug) : "/bouquets")
 
   return {
     title,

@@ -4,7 +4,6 @@ import { notFound } from "next/navigation"
 import { CheckIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { siteConfig } from "@/config/site"
 import { orderExists } from "@/server/orders/queries"
 
 export const metadata: Metadata = {
@@ -33,11 +32,8 @@ export default async function OrderSuccessPage({ params }: PageProps<"/order-suc
           <span className="mt-1 block font-heading text-3xl text-ink tabular-nums">№ {number}</span>
         </p>
         <p className="mt-8 max-w-md text-[0.9375rem] leading-relaxed text-ink-soft">
-          Менеджер уточнить адресу, дату й час доставки, її вартість і спосіб оплати. Якщо хочете
-          щось змінити, зателефонуйте нам:{" "}
-          <a href={siteConfig.contacts.phoneHref} className="text-ink underline underline-offset-4 whitespace-nowrap">
-            {siteConfig.contacts.phone}
-          </a>
+          Менеджер напише вам у Telegram на номер, який ви вказали, і уточнить адресу, дату й
+          час доставки, її вартість і спосіб оплати.
         </p>
         <Button asChild size="lg" variant="outline" className="mt-9 bg-transparent">
           <Link href="/bouquets">Повернутися до каталогу</Link>

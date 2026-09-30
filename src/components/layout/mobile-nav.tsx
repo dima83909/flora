@@ -38,12 +38,11 @@ export function MobileNav() {
         <nav aria-label="Мобільна навігація" className="flex-1 overflow-y-auto px-6 py-4">
           <MainNav variant="mobile" onNavigate={() => setOpen(false)} />
         </nav>
-        <div className="space-y-1 border-t bg-linen/60 px-6 py-5 text-sm text-ink-soft">
-          <a href={siteConfig.contacts.phoneHref} className="block font-medium text-ink">
-            {siteConfig.contacts.phone}
-          </a>
-          <p>{siteConfig.contacts.hours}</p>
-        </div>
+        {siteConfig.contacts.openingHours ? (
+          <p className="border-t bg-linen/60 px-6 py-5 text-sm text-ink-soft">
+            {siteConfig.contacts.openingHours}
+          </p>
+        ) : null}
       </SheetContent>
     </Sheet>
   )

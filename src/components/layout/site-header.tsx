@@ -5,7 +5,6 @@ import { HeaderFavorites } from "@/components/layout/header-favorites"
 import { MainNav } from "@/components/layout/main-nav"
 import { MobileNav } from "@/components/layout/mobile-nav"
 import { HeaderSearch } from "@/components/search/header-search"
-import { siteConfig } from "@/config/site"
 
 export function SiteHeader() {
   return (
@@ -25,12 +24,6 @@ export function SiteHeader() {
           </nav>
 
           <div className="flex flex-1 items-center justify-end sm:gap-1 lg:flex-none">
-            <a
-              href={siteConfig.contacts.phoneHref}
-              className="mr-4 hidden text-[0.9375rem] text-ink-soft transition-colors hover:text-ink xl:inline"
-            >
-              {siteConfig.contacts.phone}
-            </a>
             <HeaderSearch />
             <HeaderFavorites />
             <CartButton />

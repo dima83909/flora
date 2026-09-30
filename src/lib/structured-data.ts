@@ -1,8 +1,17 @@
 import { siteConfig } from "@/config/site"
 import type { Availability, Product } from "@/types/catalog"
 
-export function absoluteUrl(path: string) {
-  return new URL(path, siteConfig.url).toString()
+/** Absolute URL on the storefront's domain, or undefined until the domain is configured */
+export function absoluteUrl(path: string): string | undefined {
+  return siteConfig.url ? new URL(path, siteConfig.url).toString() : undefined
+}
+
+/**
+ * Path for canonical links and og:url. Returns undefined until the real domain is
+ * configured, so Next.js emits no canonical rather than one on a wrong host.
+ */
+export function canonicalPath(path: string): string | undefined {
+  return siteConfig.url ? path : undefined
 }
 
 const schemaAvailability: Record<Availability, string> = {
@@ -12,9 +21,12 @@ const schemaAvailability: Record<Availability, string> = {
   out_of_stock: "https://schema.org/OutOfStock",
 }
 
-/** Photo URLs for metadata; empty until real photography is added to the catalogue */
+/** Absolute photo URLs for metadata; empty until real photos and the real domain exist */
 export function productImageUrls(product: Pick<Product, "images">) {
-  return (product.images ?? []).map(absoluteUrl)
+  return (product.images ?? []).flatMap((path) => {
+    const url = absoluteUrl(path)
+    return url ? [url] : []
+  })
 }
 
 export function productJsonLd(product: Product, categoryName?: string) {
@@ -27,14 +39,14 @@ export function productJsonLd(product: Product, categoryName?: string) {
     name: product.name,
     description: product.description,
     sku: product.slug,
-    url,
+    ...(url ? { url } : {}),
     ...(categoryName ? { category: categoryName } : {}),
     // Only real photos are published; the SVG illustrations are placeholders
     ...(images.length ? { image: images } : {}),
     brand: { "@type": "Brand", name: siteConfig.name },
     offers: {
       "@type": "Offer",
-      url,
+      ...(url ? { url } : {}),
       priceCurrency: "UAH",
       price: product.price.toFixed(2),
       availability: schemaAvailability[product.availability],

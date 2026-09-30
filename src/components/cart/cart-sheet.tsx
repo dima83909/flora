@@ -16,7 +16,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { siteConfig } from "@/config/site"
 import { pluralize } from "@/lib/catalog"
 import { cartActions, useCartCount, useCartLines, useCartOpen } from "@/lib/stores/cart"
 import { formatPrice } from "@/lib/utils"
@@ -53,8 +52,6 @@ export function CartSheet() {
     return product ? [{ ...line, product }] : []
   })
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-  const { freeFrom } = siteConfig.delivery
-  const leftForFreeDelivery = Math.max(0, freeFrom - subtotal)
 
   return (
     <Sheet open={open} onOpenChange={cartActions.setOpen}>
@@ -125,13 +122,8 @@ export function CartSheet() {
             </ul>
 
             <SheetFooter className="gap-4 border-t bg-linen/50 px-6 py-5">
-              <p className="text-sm text-ink-soft">
-                {leftForFreeDelivery > 0
-                  ? `До безкоштовної доставки по Києву: ще ${formatPrice(leftForFreeDelivery)}`
-                  : "Доставка по Києву для цього замовлення безкоштовна"}
-              </p>
               <div className="flex items-baseline justify-between">
-                <span className="text-[0.9375rem] text-ink">Разом</span>
+                <span className="text-[0.9375rem] text-ink">Разом без доставки</span>
                 <span className="text-xl font-medium text-ink tabular-nums">{formatPrice(subtotal)}</span>
               </div>
               <Button asChild size="lg" className="w-full">
@@ -140,7 +132,7 @@ export function CartSheet() {
                 </Link>
               </Button>
               <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">
-                Онлайн-оплати немає: після оформлення менеджер зателефонує й узгодить доставку та оплату.
+                Онлайн-оплати немає: після оформлення менеджер напише вам у Telegram і узгодить доставку та оплату.
               </p>
             </SheetFooter>
           </>

@@ -2,11 +2,12 @@ import type { Metadata } from "next"
 
 import { CheckoutView } from "@/components/checkout/checkout-view"
 import { Breadcrumbs } from "@/components/shared/breadcrumbs"
+import { canonicalPath } from "@/lib/structured-data"
 
 export const metadata: Metadata = {
   title: "Оформлення замовлення",
-  description: "Залиште ім'я й телефон, і менеджер зателефонує, щоб узгодити доставку та оплату.",
-  alternates: { canonical: "/checkout" },
+  description: "Залиште ім'я, телефон і місто, і менеджер напише вам у Telegram, щоб узгодити доставку та оплату.",
+  alternates: { canonical: canonicalPath("/checkout") },
   robots: { index: false, follow: false },
 }
 

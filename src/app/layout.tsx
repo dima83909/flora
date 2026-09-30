@@ -23,7 +23,8 @@ const commissioner = Commissioner({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
+  // Absolute metadata URLs resolve against the real domain once NEXT_PUBLIC_SITE_URL is set
+  ...(siteConfig.url ? { metadataBase: new URL(siteConfig.url) } : {}),
   title: {
     default: siteConfig.title,
     template: `%s · ${siteConfig.name}`,

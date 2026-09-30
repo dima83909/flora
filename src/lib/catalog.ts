@@ -158,7 +158,7 @@ export function sortProducts(items: Product[], sort: SortValue) {
 }
 
 export function catalogTitle(category?: { name: string } | null) {
-  return category ? `${category.name} з доставкою по Києву` : "Каталог букетів з доставкою по Києву"
+  return category ? `${category.name} з доставкою по Україні` : "Каталог букетів з доставкою по Україні"
 }
 
 /** Quick search used by the header: purchasable and popular items first */

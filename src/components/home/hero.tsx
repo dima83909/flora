@@ -13,8 +13,8 @@ export function Hero() {
             Букети з квітів, що приїхали цього тижня
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-soft md:mt-8 md:text-xl md:leading-relaxed">
-            Збираємо вручну в майстерні на Ярославовому Валу. Перед доставкою надсилаємо
-            фото саме вашого букета, щоб ви бачили, що отримає адресат.
+            Збираємо кожен букет вручну. Перед доставкою надсилаємо фото саме вашого букета,
+            щоб ви бачили, що отримає адресат.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row md:mt-10">
             <Button asChild size="lg">

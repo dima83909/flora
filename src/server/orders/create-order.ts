@@ -129,7 +129,7 @@ export async function createGuestOrder(input: unknown): Promise<CreateOrderResul
     return {
       ok: false,
       reason: "error",
-      message: "Не вдалося оформити замовлення. Спробуйте ще раз або зателефонуйте нам.",
+      message: "Не вдалося оформити замовлення. Спробуйте ще раз за кілька хвилин.",
     }
   }
 }

@@ -1,4 +1,4 @@
-import { CameraIcon, CalendarHeartIcon, FeatherIcon, SproutIcon, type LucideIcon } from "lucide-react"
+import { CameraIcon, FeatherIcon, SproutIcon, TruckIcon, type LucideIcon } from "lucide-react"
 
 type Benefit = {
   icon: LucideIcon
@@ -23,9 +23,9 @@ const benefits: Benefit[] = [
     text: "Напишемо ваш текст чорнилом на щільному бавовняному папері. Безкоштовно до кожного замовлення.",
   },
   {
-    icon: CalendarHeartIcon,
-    title: "Нагадаємо про важливі дати",
-    text: "Залиште дату дня народження чи річниці, і ми напишемо за три дні, щоб ви встигли замовити.",
+    icon: TruckIcon,
+    title: "Доставка по всій Україні",
+    text: "Надсилаємо букети в будь-яке місто. Вартість і час доставки менеджер узгодить з вами в Telegram.",
   },
 ]
 

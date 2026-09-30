@@ -1,7 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { siteConfig } from "@/config/site"
 
+/** Shown only once the shop's real Telegram link is configured */
 export function FloristCta() {
+  const { telegramUrl } = siteConfig.contacts
+  if (!telegramUrl) return null
+
   return (
     <section aria-labelledby="florist-title" className="section-y">
       <div className="container-page">
@@ -10,19 +14,14 @@ export function FloristCta() {
             Потрібен особливий букет?
           </h2>
           <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-ink-soft">
-            Опишіть привід, улюблені кольори й бюджет. Флорист запропонує склад і надішле
-            ескіз протягом пів години.
+            Опишіть у Telegram привід, улюблені кольори й бюджет, і флорист запропонує склад
+            букета.
           </p>
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg">
-              <a href={siteConfig.contacts.telegram} target="_blank" rel="noreferrer">
-                Написати в Telegram
-              </a>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="bg-transparent">
-              <a href={siteConfig.contacts.phoneHref}>Зателефонувати</a>
-            </Button>
-          </div>
+          <Button asChild size="lg" className="mt-8">
+            <a href={telegramUrl} target="_blank" rel="noreferrer">
+              Написати в Telegram
+            </a>
+          </Button>
         </div>
       </div>
     </section>

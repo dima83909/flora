@@ -3,14 +3,13 @@
 import { useId, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { PhoneIcon } from "lucide-react"
+import { SendIcon } from "lucide-react"
 
 import { placeOrder } from "@/app/checkout/actions"
 import { GiftArt } from "@/components/brand/gift-art"
 import { useCatalog } from "@/components/catalog/catalog-provider"
 import { ProductImage } from "@/components/shop/product-image"
 import { Button } from "@/components/ui/button"
-import { siteConfig } from "@/config/site"
 import { isPurchasable, pluralize } from "@/lib/catalog"
 import { customerFieldErrors, customerSchema, ORDER_LIMITS, type CustomerField } from "@/lib/order-schema"
 import { cartActions, useCartLines } from "@/lib/stores/cart"
@@ -23,7 +22,7 @@ type Values = Record<CustomerField, string>
 type Line = { slug: string; quantity: number; product?: Product }
 
 const MANAGER_NOTE =
-  "Після оформлення менеджер зв'яжеться з вами телефоном, щоб уточнити деталі доставки та оплати."
+  "Після оформлення менеджер зв'яжеться з вами в Telegram, щоб уточнити деталі доставки та оплати."
 
 export function CheckoutView() {
   const hydrated = useHydrated()
@@ -31,7 +30,7 @@ export function CheckoutView() {
   const cartLines = useCartLines()
   const { getProduct } = useCatalog()
 
-  const [values, setValues] = useState<Values>({ name: "", phone: "", city: "Київ", comment: "" })
+  const [values, setValues] = useState<Values>({ name: "", phone: "", city: "", comment: "" })
   const [errors, setErrors] = useState<Partial<Record<CustomerField, string>>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [unavailable, setUnavailable] = useState<UnavailableItem[]>([])
@@ -226,8 +225,8 @@ export function CheckoutView() {
           Контакти
         </h2>
         <p className="mt-2 max-w-lg text-[0.9375rem] leading-relaxed text-ink-soft">
-          Адресу, дату й час доставки уточнимо телефоном, тож зараз потрібні лише ім&apos;я, номер і
-          місто.
+          Доставляємо по всій Україні. Адресу, дату й час доставки менеджер уточнить у Telegram,
+          тож зараз потрібні лише ім&apos;я, номер телефону й місто.
         </p>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -255,7 +254,7 @@ export function CheckoutView() {
             name="phone"
             label="Телефон"
             required
-            hint="Наприклад, 050 123 45 67"
+            hint="Номер, прив'язаний до вашого Telegram, наприклад 050 123 45 67"
             error={errors.phone}
             render={(props) => (
               <input
@@ -285,6 +284,7 @@ export function CheckoutView() {
                 }}
                 type="text"
                 autoComplete="address-level2"
+                placeholder="Введіть місто"
                 maxLength={ORDER_LIMITS.cityMax}
                 value={values.city}
                 onChange={(e) => update("city", e.target.value)}
@@ -294,7 +294,7 @@ export function CheckoutView() {
           <Field
             name="comment"
             label="Коментар"
-            hint={`Побажання до букета чи зручний час для дзвінка. ${values.comment.length}/${ORDER_LIMITS.commentMax}`}
+            hint={`Побажання до букета чи інші деталі. ${values.comment.length}/${ORDER_LIMITS.commentMax}`}
             error={errors.comment}
             className="sm:col-span-2"
             render={(props) => (
@@ -314,7 +314,7 @@ export function CheckoutView() {
         </div>
 
         <p className="mt-7 flex gap-3 rounded-2xl bg-petal/70 px-4 py-4 text-[0.9375rem] leading-relaxed text-ink md:px-5">
-          <PhoneIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-rose" strokeWidth={1.6} />
+          <SendIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-rose" strokeWidth={1.6} />
           {MANAGER_NOTE}
         </p>
 
@@ -325,12 +325,6 @@ export function CheckoutView() {
         <Button type="submit" size="lg" disabled={pending || Boolean(placedLines)} className="mt-6 w-full sm:w-auto sm:min-w-56">
           {pending || placedLines ? "Оформлюємо…" : "Замовити"}
         </Button>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Або зателефонуйте нам:{" "}
-          <a href={siteConfig.contacts.phoneHref} className="text-ink underline underline-offset-4 whitespace-nowrap">
-            {siteConfig.contacts.phone}
-          </a>
-        </p>
       </form>
     </div>
   )

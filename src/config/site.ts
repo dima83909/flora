@@ -1,22 +1,36 @@
+/**
+ * Public origin of the storefront, e.g. https://example.com, from NEXT_PUBLIC_SITE_URL.
+ * Until the real domain is set it stays undefined, and the site omits everything that
+ * needs an absolute URL (canonical links, og:url, JSON-LD URLs, sitemap entries).
+ */
+function readSiteUrl(): string | undefined {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  if (!raw) return undefined
+  try {
+    return new URL(raw).origin
+  } catch {
+    throw new Error(`NEXT_PUBLIC_SITE_URL must be an absolute URL like https://example.com, got "${raw}"`)
+  }
+}
+
 export const siteConfig = {
   name: "Flora",
-  title: "Flora — квіткова майстерня в Києві",
+  title: "Flora — квіткова майстерня",
   description:
-    "Авторські букети з сезонних квітів. Збираємо вручну, надсилаємо фото перед доставкою, привозимо по Києву того ж дня.",
-  url: "https://flora.kyiv.ua",
+    "Авторські букети з сезонних квітів. Збираємо вручну, надсилаємо фото перед відправкою, доставляємо по всій Україні.",
+  url: readSiteUrl(),
   locale: "uk_UA",
+  /**
+   * Confirmed business details only. Each value stays undefined until it is real;
+   * the UI hides whatever is missing rather than showing a placeholder.
+   */
   contacts: {
-    phone: "+380 44 390 12 40",
-    phoneHref: "tel:+380443901240",
-    email: "hello@flora.kyiv.ua",
-    address: "вул. Ярославів Вал, 14, Київ",
-    hours: "Щодня з 8:00 до 21:00",
-    instagram: "https://instagram.com/flora.kyiv",
-    telegram: "https://t.me/flora_kyiv",
-  },
-  delivery: {
-    sameDayCutoff: "18:00",
-    freeFrom: 3000,
+    /** Telegram is the only channel the shop uses to reach customers (https://t.me/…) */
+    telegramUrl: undefined as string | undefined,
+    /** Street address of a studio or pickup point, if the shop gets one */
+    address: undefined as string | undefined,
+    /** Human-readable opening hours, e.g. "Щодня з 9:00 до 20:00" */
+    openingHours: undefined as string | undefined,
   },
 } as const
 

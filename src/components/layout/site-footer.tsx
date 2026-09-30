@@ -17,17 +17,19 @@ export async function SiteFooter() {
         <div className="md:col-span-5">
           <Logo />
           <p className="mt-5 max-w-sm text-[0.9375rem] leading-relaxed text-ink-soft">
-            Квіткова майстерня на Ярославовому Валу. Збираємо букети з сезонних квітів
-            і привозимо їх по Києву щодня.
+            Квіткова майстерня. Збираємо букети з сезонних квітів і доставляємо їх по всій
+            Україні.
           </p>
-          <div className="mt-6 flex gap-5 text-[0.9375rem]">
-            <a href={contacts.instagram} className="text-ink underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
-              Instagram
-            </a>
-            <a href={contacts.telegram} className="text-ink underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
+          {contacts.telegramUrl ? (
+            <a
+              href={contacts.telegramUrl}
+              className="mt-6 inline-block text-[0.9375rem] text-ink underline-offset-4 hover:underline"
+              target="_blank"
+              rel="noreferrer"
+            >
               Telegram
             </a>
-          </div>
+          ) : null}
         </div>
 
         {footerNav.map((group) => (
@@ -45,28 +47,22 @@ export async function SiteFooter() {
           </nav>
         ))}
 
-        <div className="md:col-span-3">
-          <h2 className="font-sans text-sm font-medium text-ink">Майстерня</h2>
-          <address className="mt-4 space-y-3 text-[0.9375rem] leading-relaxed text-ink-soft not-italic">
-            <p>{contacts.address}</p>
-            <p>{contacts.hours}</p>
-            <p>
-              <a href={contacts.phoneHref} className="text-ink hover:underline underline-offset-4">
-                {contacts.phone}
-              </a>
-              <br />
-              <a href={`mailto:${contacts.email}`} className="hover:text-ink">
-                {contacts.email}
-              </a>
-            </p>
-          </address>
-        </div>
+        {/* Shown only once real details are set in siteConfig.contacts */}
+        {contacts.address || contacts.openingHours ? (
+          <div className="md:col-span-3">
+            <h2 className="font-sans text-sm font-medium text-ink">Майстерня</h2>
+            <address className="mt-4 space-y-3 text-[0.9375rem] leading-relaxed text-ink-soft not-italic">
+              {contacts.address ? <p>{contacts.address}</p> : null}
+              {contacts.openingHours ? <p>{contacts.openingHours}</p> : null}
+            </address>
+          </div>
+        ) : null}
       </div>
 
       <div className="border-t border-border/80">
         <div className="container-page flex flex-col gap-2 py-6 text-[0.8125rem] text-muted-foreground sm:flex-row sm:justify-between">
-          <p>© {new Date().getFullYear()} {siteConfig.name}. Квіткова майстерня, Київ.</p>
-          <p>Доставку й оплату узгоджує менеджер телефоном</p>
+          <p>© {new Date().getFullYear()} {siteConfig.name}. Замовлення букетів онлайн з доставкою по Україні.</p>
+          <p>Доставку й оплату узгоджує менеджер у Telegram</p>
         </div>
       </div>
     </footer>

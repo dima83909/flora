@@ -1,20 +1,18 @@
-import { siteConfig } from "@/config/site"
-import { deliverySteps as steps, deliveryZones as zones } from "@/data/delivery"
-import { formatPrice } from "@/lib/utils"
+import { CheckIcon } from "lucide-react"
+
+import { agreedInTelegram, deliverySteps as steps } from "@/data/delivery"
 
 export function Delivery() {
-  const { delivery } = siteConfig
-
   return (
     <section id="delivery" aria-labelledby="delivery-title" className="section-y scroll-mt-24 bg-moss text-paper">
       <div className="container-page grid gap-14 lg:grid-cols-12 lg:gap-8">
         <div className="lg:col-span-6">
           <h2 id="delivery-title" className="text-title font-light">
-            Доставка по Києву того ж дня
+            Доставка по всій Україні
           </h2>
           <p className="mt-5 max-w-lg text-lg leading-relaxed text-paper/75">
-            Замовлення до {delivery.sameDayCutoff} привеземо сьогодні. Пізніші доставляємо
-            наступного ранку з 8:00.
+            Вартість і терміни залежать від міста, тому ми не рахуємо їх автоматично. Після
+            оформлення менеджер напише вам у Telegram і все узгодить.
           </p>
 
           <ol className="mt-12 space-y-8">
@@ -37,23 +35,17 @@ export function Delivery() {
 
         <div className="lg:col-span-5 lg:col-start-8">
           <div className="rounded-2xl bg-paper/6 p-6 ring-1 ring-paper/15 md:p-8">
-            <h3 className="font-sans text-lg font-medium">Вартість доставки</h3>
-            <dl className="mt-6 divide-y divide-paper/15">
-              {zones.map((zone) => (
-                <div key={zone.area} className="flex items-baseline justify-between gap-6 py-4">
-                  <dt>
-                    <span className="block text-[0.9375rem]">{zone.area}</span>
-                    <span className="mt-0.5 block text-sm text-paper/60">{zone.time}</span>
-                  </dt>
-                  <dd className="shrink-0 font-medium tabular-nums">
-                    {zone.priceFrom ? "від " : ""}
-                    {formatPrice(zone.price)}
-                  </dd>
-                </div>
+            <h3 className="font-sans text-lg font-medium">Що узгодить менеджер</h3>
+            <ul className="mt-6 divide-y divide-paper/15">
+              {agreedInTelegram.map((item) => (
+                <li key={item} className="flex items-center gap-3 py-4 text-[0.9375rem]">
+                  <CheckIcon aria-hidden className="size-4 shrink-0 text-blush" />
+                  {item}
+                </li>
               ))}
-            </dl>
+            </ul>
             <p className="mt-4 rounded-xl bg-blush px-4 py-3 text-[0.9375rem] leading-snug text-ink">
-              Безкоштовно в межах міста для замовлень від {formatPrice(delivery.freeFrom)}
+              Онлайн-оплати на сайті немає: спосіб оплати ви обираєте разом із менеджером.
             </p>
           </div>
         </div>

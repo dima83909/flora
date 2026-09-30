@@ -11,9 +11,8 @@ import { Price } from "@/components/shop/price"
 import { ProductBadges } from "@/components/shop/product-badges"
 import { ProductCard } from "@/components/shop/product-card"
 import { categoryHref, isGiftCategory, siteConfig } from "@/config/site"
-import { deliveryZones } from "@/data/delivery"
 import { availabilityText } from "@/lib/catalog"
-import { jsonLdScript, productImageUrls, productJsonLd } from "@/lib/structured-data"
+import { canonicalPath, jsonLdScript, productImageUrls, productJsonLd } from "@/lib/structured-data"
 import { cn, formatPrice } from "@/lib/utils"
 import { getCategoryBySlug, getProductBySlug, getProductSlugs, getRelatedProducts } from "@/server/catalog"
 import type { Availability, Product } from "@/types/catalog"
@@ -32,8 +31,8 @@ export async function generateMetadata({ params }: PageProps<"/bouquets/[slug]">
 
   const title = `${product.name}: ${formatPrice(product.price)}`
   const isGift = isGiftCategory(product.category)
-  const description = `${product.description} ${isGift ? "Доставка по Києву разом із букетом або окремо." : "Доставка по Києву, фото букета перед відправкою."}`
-  const url = `/bouquets/${product.slug}`
+  const description = `${product.description} ${isGift ? "Доставка по Україні разом із букетом або окремо." : "Доставка по Україні, фото букета перед відправкою."}`
+  const url = canonicalPath(`/bouquets/${product.slug}`)
   const images = productImageUrls(product)
 
   return {
@@ -54,10 +53,10 @@ export async function generateMetadata({ params }: PageProps<"/bouquets/[slug]">
 
 function deliveryPromise(product: Product) {
   if (product.availability === "preorder") {
-    return `Привеземо через ${availabilityText(product).replace("Під замовлення, ", "")} після оплати`
+    return `Під замовлення: квіти привозимо за ${availabilityText(product).replace("Під замовлення, ", "")}, доставка по всій Україні`
   }
-  if (product.availability === "out_of_stock") return "Повідомте флористу, і ми напишемо, щойно сорт з’явиться"
-  return `Доставимо сьогодні, якщо замовити до ${siteConfig.delivery.sameDayCutoff}`
+  if (product.availability === "out_of_stock") return "Зараз немає в наявності. Додайте в обране, щоб повернутися пізніше"
+  return "Доставляємо по всій Україні"
 }
 
 const availabilityDot: Record<Availability, string> = {
@@ -127,8 +126,7 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
                 <span>
                   {deliveryPromise(product)}
                   <span className="mt-0.5 block text-sm text-ink-soft">
-                    По Києву від {formatPrice(deliveryZones[0].price)}, безкоштовно від{" "}
-                    {formatPrice(siteConfig.delivery.freeFrom)}
+                    Вартість і час доставки менеджер узгодить з вами в Telegram
                   </span>
                 </span>
               </li>
@@ -166,23 +164,10 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
                 </Details>
               ) : null}
               <Details title="Доставка та оплата">
-                <dl className="divide-y divide-border/70">
-                  {deliveryZones.map((zone) => (
-                    <div key={zone.area} className="flex items-baseline justify-between gap-4 py-2.5">
-                      <dt>
-                        {zone.area}
-                        <span className="block text-sm text-muted-foreground">{zone.time}</span>
-                      </dt>
-                      <dd className="shrink-0 font-medium text-ink tabular-nums">
-                        {zone.priceFrom ? "від " : ""}
-                        {formatPrice(zone.price)}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="mt-3">
-                  Спосіб оплати й точну вартість доставки менеджер узгодить з вами телефоном після
-                  оформлення. Детальніше в розділі{" "}
+                <p>
+                  Доставляємо по всій Україні. Після оформлення менеджер напише вам у Telegram і
+                  узгодить адресу, дату й час, вартість доставки та спосіб оплати. Онлайн-оплати на
+                  сайті немає. Детальніше в розділі{" "}
                   <Link href="/#delivery" className="text-ink underline underline-offset-4">
                     доставка
                   </Link>

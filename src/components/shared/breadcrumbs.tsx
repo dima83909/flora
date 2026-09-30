@@ -8,16 +8,20 @@ export type Crumb = { name: string; href: string }
 
 /** Visible breadcrumb trail plus matching BreadcrumbList structured data */
 export function Breadcrumbs({ items, className }: { items: Crumb[]; className?: string }) {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: items.map((item, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: item.name,
-      item: absoluteUrl(item.href),
-    })),
-  }
+  // BreadcrumbList needs absolute URLs, so it is emitted only once the real domain is configured
+  const urls = items.map((item) => absoluteUrl(item.href))
+  const jsonLd = urls.every(Boolean)
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: items.map((item, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: item.name,
+          item: urls[index],
+        })),
+      }
+    : null
 
   return (
     <nav aria-label="Навігаційний ланцюжок" className={cn("text-sm text-muted-foreground", className)}>
@@ -42,10 +46,9 @@ export function Breadcrumbs({ items, className }: { items: Crumb[]; className?: 
           )
         })}
       </ol>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={jsonLdScript(jsonLd)}
-      />
+      {jsonLd ? (
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(jsonLd)} />
+      ) : null}
     </nav>
   )
 }

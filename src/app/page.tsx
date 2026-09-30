@@ -6,10 +6,11 @@ import { Delivery } from "@/components/home/delivery"
 import { FloristCta } from "@/components/home/florist-cta"
 import { Hero } from "@/components/home/hero"
 import { PopularBouquets } from "@/components/home/popular-bouquets"
+import { canonicalPath } from "@/lib/structured-data"
 
 export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-  openGraph: { url: "/" },
+  alternates: { canonical: canonicalPath("/") },
+  openGraph: { url: canonicalPath("/") },
 }
 
 export default function HomePage() {

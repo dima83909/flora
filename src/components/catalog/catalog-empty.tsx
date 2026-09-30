@@ -17,7 +17,7 @@ export function CatalogEmpty({ filters, hasFavorites, onReset }: CatalogEmptyPro
     ? "Натискайте на сердечко на картці, щоб зберегти букет і повернутися до нього пізніше."
     : filters.query
       ? `За запитом «${filters.query}» з такими фільтрами букетів немає. Спробуйте інше слово або приберіть частину фільтрів.`
-      : "З такими фільтрами букетів немає. Приберіть частину фільтрів або опишіть флористу, що шукаєте, і ми зберемо букет вручну."
+      : "З такими фільтрами букетів немає. Приберіть частину фільтрів або подивіться весь каталог."
 
   return (
     <div className="flex flex-col items-center py-12 text-center md:py-20">
@@ -30,9 +30,9 @@ export function CatalogEmpty({ filters, hasFavorites, onReset }: CatalogEmptyPro
         <Button size="lg" onClick={onReset}>
           {onlyFavorites ? "Дивитися весь каталог" : "Скинути фільтри"}
         </Button>
-        {onlyFavorites ? null : (
+        {onlyFavorites || !siteConfig.contacts.telegramUrl ? null : (
           <Button asChild size="lg" variant="outline" className="bg-transparent">
-            <a href={siteConfig.contacts.telegram} target="_blank" rel="noreferrer">
+            <a href={siteConfig.contacts.telegramUrl} target="_blank" rel="noreferrer">
               Написати флористу
             </a>
           </Button>

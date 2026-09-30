@@ -1,7 +1,7 @@
 // Flora storefront database schema.
 //
-// Business model: products → cart (browser) → guest order → manager calls the
-// customer to agree delivery and payment. There are no customer accounts, online
+// Business model: products → cart (browser) → guest order → a manager contacts the
+// customer in Telegram (by the phone number in the order) to agree delivery and payment. There are no customer accounts, online
 // payments or delivery calculation, so the schema has no users, payments or addresses.
 //
 // Conventions
@@ -35,7 +35,7 @@ enum ProductAvailability {
   @@map("product_availability")
 }
 
-/// Order lifecycle as handled by a manager on the phone
+/// Order lifecycle as handled by a manager
 enum OrderStatus {
   /// Placed by the customer, nobody has called yet
   NEW
@@ -139,7 +139,7 @@ model ProductImage {
 // ─── Orders ──────────────────────────────────────────────────────────────────
 
 /// Guest order. Delivery address, date, time, delivery cost and payment are agreed
-/// by phone, so the order stores only what the customer typed and the goods total.
+/// in Telegram, so the order stores only what the customer typed and the goods total.
 model Order {
   id     String      @id @default(cuid())
   /// Human-facing sequential number, starts at 1001
