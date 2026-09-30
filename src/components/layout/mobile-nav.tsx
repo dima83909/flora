@@ -1,10 +1,10 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
 import { MenuIcon } from "lucide-react"
 
 import { Logo } from "@/components/brand/logo"
+import { MainNav } from "@/components/layout/main-nav"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -14,7 +14,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { mainNav, siteConfig } from "@/config/site"
+import { siteConfig } from "@/config/site"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -28,27 +28,15 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="left" className="w-[88%] max-w-sm gap-0 bg-paper p-0">
         <SheetHeader className="border-b px-6 py-5">
-          <SheetTitle asChild>
-            <div>
-              <Logo />
-            </div>
-          </SheetTitle>
+          <SheetTitle className="sr-only">Меню</SheetTitle>
           <SheetDescription className="sr-only">Навігація сайтом</SheetDescription>
+          {/* Link clicks bubble here, so the menu closes when going home */}
+          <div className="self-start" onClick={() => setOpen(false)}>
+            <Logo />
+          </div>
         </SheetHeader>
         <nav aria-label="Мобільна навігація" className="flex-1 overflow-y-auto px-6 py-4">
-          <ul>
-            {mainNav.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="block border-b border-border/70 py-4 font-heading text-2xl font-light text-ink transition-colors hover:text-stem"
-                >
-                  {item.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <MainNav variant="mobile" onNavigate={() => setOpen(false)} />
         </nav>
         <div className="space-y-1 border-t bg-linen/60 px-6 py-5 text-sm text-ink-soft">
           <a href={siteConfig.contacts.phoneHref} className="block font-medium text-ink">

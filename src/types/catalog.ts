@@ -43,6 +43,12 @@ export type Product = {
   /** ISO date the product was added; drives the "new" sort */
   addedAt: string
   visual: ProductVisual
+  /**
+   * Real product photography, root-relative (e.g. "/images/products/pink-peony-1.jpg")
+   * or absolute URLs. Feeds structured data and Open Graph once available;
+   * the illustrated `visual` stays as a fallback.
+   */
+  images?: string[]
 }
 
 export type Category = {

@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ChevronRightIcon } from "lucide-react"
 
-import { siteConfig } from "@/config/site"
+import { absoluteUrl, jsonLdScript } from "@/lib/structured-data"
 import { cn } from "@/lib/utils"
 
 export type Crumb = { name: string; href: string }
@@ -15,7 +15,7 @@ export function Breadcrumbs({ items, className }: { items: Crumb[]; className?: 
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: new URL(item.href, siteConfig.url).toString(),
+      item: absoluteUrl(item.href),
     })),
   }
 
@@ -44,7 +44,7 @@ export function Breadcrumbs({ items, className }: { items: Crumb[]; className?: 
       </ol>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+        dangerouslySetInnerHTML={jsonLdScript(jsonLd)}
       />
     </nav>
   )

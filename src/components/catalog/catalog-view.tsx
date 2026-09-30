@@ -7,6 +7,7 @@ import { SearchIcon, SlidersHorizontalIcon, XIcon } from "lucide-react"
 import { CatalogEmpty } from "@/components/catalog/catalog-empty"
 import { FilterPanel } from "@/components/catalog/filter-panel"
 import { SortSelect, SortSheet } from "@/components/catalog/sort-control"
+import { Breadcrumbs } from "@/components/shared/breadcrumbs"
 import { ProductCard } from "@/components/shop/product-card"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,9 +20,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { siteConfig } from "@/config/site"
 import { categories, getCategory, products } from "@/data/catalog"
 import {
   applyFilters,
+  catalogTitle,
   countPanelFilters,
   DEFAULT_SORT,
   filtersToSearch,
@@ -83,11 +86,12 @@ export function CatalogView() {
     debounce.current = setTimeout(() => update({ query: value.trim() }), SEARCH_DEBOUNCE_MS)
   }
 
-  // Header search icon links to /bouquets#catalog-search
   const searchRef = useRef<HTMLInputElement>(null)
+
+  // Category switches don't reload the page, so keep the tab title in step with the server metadata
   useEffect(() => {
-    if (window.location.hash === "#catalog-search") searchRef.current?.focus()
-  }, [])
+    document.title = `${catalogTitle(category)} · ${siteConfig.name}`
+  }, [category])
 
   const activeChips = [
     filters.query && { key: "query", label: `«${filters.query}»`, clear: () => { setQueryInput(""); update({ query: "" }) } },
@@ -103,7 +107,14 @@ export function CatalogView() {
   const resultText = `${results.length} ${pluralize(results.length, ["товар", "товари", "товарів"])}`
 
   return (
-    <div className="container-page pb-20 md:pb-28">
+    <div className="container-page pt-6 pb-20 md:pt-8 md:pb-28">
+      <Breadcrumbs
+        items={[
+          { name: "Головна", href: "/" },
+          { name: "Каталог", href: "/bouquets" },
+          ...(category ? [{ name: category.name, href: `/bouquets?category=${category.slug}` }] : []),
+        ]}
+      />
       <header className="max-w-2xl pt-6 md:pt-10">
         <h1 className="text-title font-light text-ink">{category ? category.name : "Каталог"}</h1>
         <p className="mt-4 text-base leading-relaxed text-ink-soft md:text-lg">
@@ -163,7 +174,7 @@ export function CatalogView() {
                 e.currentTarget.blur()
               }
             }}
-            className="h-11 w-full scroll-mt-40 rounded-full border border-input bg-card pr-10 pl-11 text-base text-ink outline-none placeholder:text-muted-foreground focus-visible:border-stem focus-visible:ring-3 focus-visible:ring-stem/20 md:text-[0.9375rem] [&::-webkit-search-cancel-button]:hidden"
+            className="h-11 w-full rounded-full border border-input bg-card pr-10 pl-11 text-base text-ink outline-none placeholder:text-muted-foreground focus-visible:border-stem focus-visible:ring-3 focus-visible:ring-stem/20 md:text-[0.9375rem] [&::-webkit-search-cancel-button]:hidden"
           />
           {queryInput ? (
             <button

@@ -22,20 +22,14 @@ export function ProductCard({ product, headingLevel: Heading = "h3" }: ProductCa
   return (
     <article className="group relative flex w-full flex-col">
       <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-linen">
+        {/* Desktop hover zooms into the blooms; a CSS transform avoids rendering a second illustration */}
         <ProductImage
           visual={product.visual}
           className={cn(
-            "transition-transform duration-700 ease-petal [@media(hover:hover)]:group-hover:scale-[1.03]",
+            "origin-[50%_38%] transition-transform duration-700 ease-petal [@media(hover:hover)]:group-hover:scale-[1.28]",
             !available && "opacity-60 grayscale-[35%]"
           )}
         />
-        {/* Desktop hover reveals a close-up angle of the same bouquet */}
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-0 transition-opacity duration-500 ease-petal [@media(hover:hover)]:group-hover:opacity-100"
-        >
-          <ProductImage visual={product.visual} view="close" className="scale-[1.03]" />
-        </div>
         <ProductBadges product={product} className="absolute top-2.5 left-2.5 max-w-[calc(100%-3.75rem)] md:top-3 md:left-3" />
         <FavoriteButton slug={product.slug} name={product.name} className="absolute top-1.5 right-1.5 z-10 md:top-2 md:right-2" />
       </div>

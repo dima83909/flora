@@ -41,7 +41,7 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
       { title: "Усі букети", href: "/bouquets" },
       { title: "Композиції", href: "/bouquets?category=arrangements" },
       { title: "Тюльпани", href: "/bouquets?category=tulips" },
-      { title: "Обране", href: "/bouquets?favorites=1" },
+      { title: "Обране", href: "/favorites" },
     ],
   },
   {

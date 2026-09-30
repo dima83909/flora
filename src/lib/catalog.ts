@@ -138,6 +138,30 @@ export function applyFilters(
   })
 }
 
+/** Page title for the catalogue listing, shared by server metadata and client navigation */
+export function catalogTitle(category?: { name: string } | null) {
+  return category ? `${category.name} з доставкою по Києву` : "Каталог букетів з доставкою по Києву"
+}
+
+/** Quick search used by the header: purchasable and popular items first */
+export function searchProducts(items: Product[], query: string, limit?: number) {
+  const trimmed = query.trim()
+  if (!trimmed) return []
+  const found = applyFilters(
+    items,
+    { query: trimmed, category: null, price: null, inStockOnly: false, favoritesOnly: false, sort: DEFAULT_SORT },
+    []
+  )
+  return limit ? found.slice(0, limit) : found
+}
+
+/** Filtered, searched or re-sorted listings are variations of the same page and should not be indexed */
+export function isRefinedListing(filters: CatalogFilters) {
+  return Boolean(
+    filters.query || filters.price || filters.inStockOnly || filters.favoritesOnly || filters.sort !== DEFAULT_SORT
+  )
+}
+
 export function availabilityText(product: Pick<Product, "availability" | "leadDays">) {
   switch (product.availability) {
     case "in_stock":

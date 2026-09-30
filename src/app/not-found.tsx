@@ -1,19 +1,30 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
+
+export const metadata: Metadata = {
+  title: "Сторінку не знайдено",
+  description: "Такої сторінки немає. Перейдіть на головну або в каталог букетів.",
+}
 
 export default function NotFound() {
   return (
     <section className="container-page section-y">
       <div className="max-w-xl">
-        <h1 className="text-title font-light text-ink">Цієї сторінки ще немає</h1>
+        <h1 className="text-title font-light text-ink">Такої сторінки немає</h1>
         <p className="mt-5 text-lg leading-relaxed text-ink-soft">
-          Каталог зараз наповнюється. Поверніться на головну або напишіть флористу, і ми
-          підберемо букет вручну.
+          Можливо, посилання застаріло або букет прибрали з каталогу. Подивіться, що є зараз,
+          або поверніться на головну.
         </p>
-        <Button asChild size="lg" className="mt-8">
-          <Link href="/">На головну</Link>
-        </Button>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Button asChild size="lg">
+            <Link href="/bouquets">Перейти до каталогу</Link>
+          </Button>
+          <Button asChild size="lg" variant="outline" className="bg-transparent">
+            <Link href="/">На головну</Link>
+          </Button>
+        </div>
       </div>
     </section>
   )

@@ -11,6 +11,14 @@ npm run lint    # ESLint
 npx tsc --noEmit  # перевірка типів
 ```
 
+## Маршрути
+
+- `/` — головна
+- `/bouquets` — каталог; категорія, пошук, ціна та сортування задаються параметрами URL (`?category=roses&q=…`)
+- `/bouquets/[slug]` — сторінка товару (статично генерується для кожного товару)
+- `/favorites` — обране, зберігається в localStorage (noindex)
+- `/sitemap.xml`, `/robots.txt`
+
 ## Структура
 
 - `src/app` — маршрути, root layout, глобальні стилі та дизайн-токени (`globals.css`)
@@ -22,8 +30,11 @@ npx tsc --noEmit  # перевірка типів
 - `src/components/catalog` — сторінка каталогу: фільтри, сортування, пошук, empty state
 - `src/components/product` — галерея та блок покупки сторінки товару
 - `src/components/cart` — кнопка й бічна панель кошика
+- `src/components/search` — пошук у header
+- `src/components/favorites` — сторінка обраного
 - `src/lib/catalog.ts` — фільтрація, сортування, параметри URL
 - `src/lib/stores` — клієнтські стори кошика й обраного (localStorage)
+- `src/lib/structured-data.ts` — JSON-LD товарів; фото додаються через поле `images` у даних товару
 - `src/config/site.ts` — назва, контакти, навігація
 - `src/data` — тимчасові дані: каталог, доставка, догляд за квітами
 - `src/types` — спільні типи

@@ -34,6 +34,7 @@ export const metadata: Metadata = {
     title: siteConfig.title,
     description: siteConfig.description,
   },
+  twitter: { card: "summary" },
 }
 
 export const viewport: Viewport = {

@@ -15,6 +15,7 @@ import { careByCategory } from "@/data/care"
 import { getCategory, getProductBySlug, getRelatedProducts, products } from "@/data/catalog"
 import { deliveryZones } from "@/data/delivery"
 import { availabilityText } from "@/lib/catalog"
+import { jsonLdScript, productImageUrls, productJsonLd } from "@/lib/structured-data"
 import { cn, formatPrice } from "@/lib/utils"
 import type { Availability, Product } from "@/types/catalog"
 
@@ -31,8 +32,10 @@ export async function generateMetadata({ params }: PageProps<"/bouquets/[slug]">
   if (!product) return {}
 
   const title = `${product.name}: ${formatPrice(product.price)}`
-  const description = `${product.description} Доставка по Києву, фото букета перед відправкою.`
+  const isGift = product.category === "gifts"
+  const description = `${product.description} ${isGift ? "Доставка по Києву разом із букетом або окремо." : "Доставка по Києву, фото букета перед відправкою."}`
   const url = `/bouquets/${product.slug}`
+  const images = productImageUrls(product)
 
   return {
     title,
@@ -45,35 +48,7 @@ export async function generateMetadata({ params }: PageProps<"/bouquets/[slug]">
       description: product.description,
       locale: siteConfig.locale,
       siteName: siteConfig.name,
-    },
-  }
-}
-
-const schemaAvailability: Record<Availability, string> = {
-  in_stock: "https://schema.org/InStock",
-  low_stock: "https://schema.org/LimitedAvailability",
-  preorder: "https://schema.org/PreOrder",
-  out_of_stock: "https://schema.org/OutOfStock",
-}
-
-function productJsonLd(product: Product) {
-  const url = new URL(`/bouquets/${product.slug}`, siteConfig.url).toString()
-  return {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.description,
-    sku: product.slug,
-    category: getCategory(product.category)?.name,
-    brand: { "@type": "Brand", name: siteConfig.name },
-    offers: {
-      "@type": "Offer",
-      url,
-      priceCurrency: "UAH",
-      price: product.price,
-      availability: schemaAvailability[product.availability],
-      itemCondition: "https://schema.org/NewCondition",
-      seller: { "@type": "Organization", name: siteConfig.name },
+      ...(images.length ? { images: images.map((src) => ({ url: src, alt: product.name })) } : {}),
     },
   }
 }
@@ -107,7 +82,7 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd(product)).replace(/</g, "\\u003c") }}
+        dangerouslySetInnerHTML={jsonLdScript(productJsonLd(product))}
       />
 
       <div className="container-page pt-5 pb-16 md:pt-8 md:pb-24">
