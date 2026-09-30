@@ -92,9 +92,12 @@ function normalize(value: string) {
     .replace(/ё/g, "е")
 }
 
-function matchesQuery(product: Product, query: string) {
+/**
+ * Every word of the query must appear in the name, composition, stems or category name.
+ * Case-, apostrophe- and ё/е-insensitive. Shared by the storefront and the server catalogue.
+ */
+export function productMatchesQuery(product: Product, query: string, categoryName = "") {
   if (!query) return true
-  const categoryName = categories.find((c) => c.slug === product.category)?.name ?? ""
   const haystack = normalize(
     [product.name, product.composition, product.stems.join(" "), categoryName].join(" ")
   )
@@ -102,6 +105,10 @@ function matchesQuery(product: Product, query: string) {
     .split(/\s+/)
     .filter(Boolean)
     .every((word) => haystack.includes(word))
+}
+
+function matchesQuery(product: Product, query: string) {
+  return productMatchesQuery(product, query, categories.find((c) => c.slug === product.category)?.name)
 }
 
 export function isPurchasable(availability: Availability) {
@@ -124,21 +131,24 @@ export function applyFilters(
     return matchesQuery(product, filters.query)
   })
 
-  const sorters: Record<SortValue, (a: Product, b: Product) => number> = {
-    popular: (a, b) => b.popularity - a.popularity,
-    new: (a, b) => b.addedAt.localeCompare(a.addedAt),
-    "price-asc": (a, b) => a.price - b.price,
-    "price-desc": (a, b) => b.price - a.price,
-  }
+  return sortProducts(result, filters.sort)
+}
 
-  // Unavailable items always sink to the end, whatever the sort
-  return result.sort((a, b) => {
+const sorters: Record<SortValue, (a: Product, b: Product) => number> = {
+  popular: (a, b) => b.popularity - a.popularity,
+  new: (a, b) => b.addedAt.localeCompare(a.addedAt),
+  "price-asc": (a, b) => a.price - b.price,
+  "price-desc": (a, b) => b.price - a.price,
+}
+
+/** Sorts in place; unavailable items always sink to the end, whatever the sort */
+export function sortProducts(items: Product[], sort: SortValue) {
+  return items.sort((a, b) => {
     const stock = Number(!isPurchasable(a.availability)) - Number(!isPurchasable(b.availability))
-    return stock || sorters[filters.sort](a, b)
+    return stock || sorters[sort](a, b)
   })
 }
 
-/** Page title for the catalogue listing, shared by server metadata and client navigation */
 export function catalogTitle(category?: { name: string } | null) {
   return category ? `${category.name} з доставкою по Києву` : "Каталог букетів з доставкою по Києву"
 }
