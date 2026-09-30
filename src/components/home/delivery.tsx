@@ -1,0 +1,63 @@
+import { siteConfig } from "@/config/site"
+import { deliverySteps as steps, deliveryZones as zones } from "@/data/delivery"
+import { formatPrice } from "@/lib/utils"
+
+export function Delivery() {
+  const { delivery } = siteConfig
+
+  return (
+    <section id="delivery" aria-labelledby="delivery-title" className="section-y scroll-mt-24 bg-moss text-paper">
+      <div className="container-page grid gap-14 lg:grid-cols-12 lg:gap-8">
+        <div className="lg:col-span-6">
+          <h2 id="delivery-title" className="text-title font-light">
+            Доставка по Києву того ж дня
+          </h2>
+          <p className="mt-5 max-w-lg text-lg leading-relaxed text-paper/75">
+            Замовлення до {delivery.sameDayCutoff} привеземо сьогодні. Пізніші доставляємо
+            наступного ранку з 8:00.
+          </p>
+
+          <ol className="mt-12 space-y-8">
+            {steps.map((step, index) => (
+              <li key={step.title} className="grid grid-cols-[2.5rem_1fr] gap-4">
+                <span
+                  aria-hidden
+                  className="flex size-10 items-center justify-center rounded-full border border-paper/30 font-heading text-lg"
+                >
+                  {index + 1}
+                </span>
+                <div>
+                  <h3 className="font-sans text-lg font-medium">{step.title}</h3>
+                  <p className="mt-1.5 max-w-md text-[0.9375rem] leading-relaxed text-paper/70">{step.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="lg:col-span-5 lg:col-start-8">
+          <div className="rounded-2xl bg-paper/6 p-6 ring-1 ring-paper/15 md:p-8">
+            <h3 className="font-sans text-lg font-medium">Вартість доставки</h3>
+            <dl className="mt-6 divide-y divide-paper/15">
+              {zones.map((zone) => (
+                <div key={zone.area} className="flex items-baseline justify-between gap-6 py-4">
+                  <dt>
+                    <span className="block text-[0.9375rem]">{zone.area}</span>
+                    <span className="mt-0.5 block text-sm text-paper/60">{zone.time}</span>
+                  </dt>
+                  <dd className="shrink-0 font-medium tabular-nums">
+                    {zone.priceFrom ? "від " : ""}
+                    {formatPrice(zone.price)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-4 rounded-xl bg-blush px-4 py-3 text-[0.9375rem] leading-snug text-ink">
+              Безкоштовно в межах міста для замовлень від {formatPrice(delivery.freeFrom)}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}

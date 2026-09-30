@@ -1,26 +1,229 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Flora design tokens
+ * ---------------------------------------------------------------
+ * Warm white paper, green-black ink, stem greens and petal pinks.
+ * shadcn/ui semantic tokens map onto the brand palette below, so
+ * every UI primitive inherits the brand without per-component overrides.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand palette */
+  --paper: #fbf8f3;
+  --linen: #f1ebe2;
+  --ink: #1e231f;
+  --ink-soft: #4a5048;
+  --stem: #5f6f57;
+  --moss: #2e3b2b;
+  --sage: #c9d1bf;
+  --petal: #f6e7e2;
+  --blush: #ebcfc9;
+  --rose: #a5605b;
+
+  /* shadcn/ui semantic tokens */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #fffdfa;
+  --card-foreground: var(--ink);
+  --popover: #fffdfa;
+  --popover-foreground: var(--ink);
+  --primary: var(--moss);
+  --primary-foreground: var(--paper);
+  --secondary: var(--linen);
+  --secondary-foreground: var(--ink);
+  --muted: var(--linen);
+  --muted-foreground: #676c63;
+  --accent: var(--petal);
+  --accent-foreground: #6e3b37;
+  --destructive: #b3412f;
+  --border: #e3dcd0;
+  --input: #d9d1c4;
+  --ring: var(--stem);
+  --chart-1: var(--moss);
+  --chart-2: var(--stem);
+  --chart-3: var(--sage);
+  --chart-4: var(--rose);
+  --chart-5: var(--blush);
+  --radius: 0.75rem;
+  --sidebar: var(--paper);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--moss);
+  --sidebar-primary-foreground: var(--paper);
+  --sidebar-accent: var(--linen);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--stem);
 }
 
 @theme inline {
+  /* Typography */
+  --font-sans: var(--font-commissioner);
+  --font-heading: var(--font-literata);
+  --font-serif: var(--font-literata);
+
+  /* Brand colors -> bg-moss, text-rose, etc. */
+  --color-paper: var(--paper);
+  --color-linen: var(--linen);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-stem: var(--stem);
+  --color-moss: var(--moss);
+  --color-sage: var(--sage);
+  --color-petal: var(--petal);
+  --color-blush: var(--blush);
+  --color-rose: var(--rose);
+
+  /* shadcn/ui */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Type scale (modular, ~1.25 on mobile, fluid display sizes) */
+  --text-display: clamp(2.75rem, 1.6rem + 5.2vw, 5.75rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.03em;
+  --text-title: clamp(2rem, 1.45rem + 2.4vw, 3.25rem);
+  --text-title--line-height: 1.08;
+  --text-title--letter-spacing: -0.02em;
+  --text-subtitle: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  --text-subtitle--line-height: 1.25;
+  --text-subtitle--letter-spacing: -0.01em;
+
+  --container-page: 84rem;
+  --ease-petal: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "kern", "liga";
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading text-balance;
+    font-optical-sizing: auto;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--blush);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--stem);
+    outline-offset: 3px;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility container-page {
+  width: 100%;
+  max-width: var(--container-page);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  @media (width >= 48rem) {
+    padding-inline: 2.5rem;
+  }
+  @media (width >= 80rem) {
+    padding-inline: 3.5rem;
+  }
+}
+
+/* Arch window: the recurring Flora frame (vase / greenhouse window) */
+@utility arch {
+  border-radius: 999px 999px 1.25rem 1.25rem;
+}
+
+@utility section-y {
+  padding-block: 4.5rem;
+  @media (width >= 48rem) {
+    padding-block: 7rem;
+  }
+}
+
+/* One orchestrated hero reveal; everything else stays still */
+@keyframes bloom-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-bloom {
+  animation: bloom-in 900ms var(--ease-petal) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keep the footer clear of the mobile sticky purchase bar on product pages */
+@media (width < 64rem) {
+  body:has([data-sticky-cta]) footer {
+    padding-bottom: 5.5rem;
+  }
 }
