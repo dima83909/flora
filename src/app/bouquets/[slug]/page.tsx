@@ -10,29 +10,28 @@ import { SectionHeading } from "@/components/shared/section-heading"
 import { Price } from "@/components/shop/price"
 import { ProductBadges } from "@/components/shop/product-badges"
 import { ProductCard } from "@/components/shop/product-card"
-import { siteConfig } from "@/config/site"
-import { careByCategory } from "@/data/care"
-import { getCategory, getProductBySlug, getRelatedProducts, products } from "@/data/catalog"
+import { categoryHref, isGiftCategory, siteConfig } from "@/config/site"
 import { deliveryZones } from "@/data/delivery"
 import { availabilityText } from "@/lib/catalog"
 import { jsonLdScript, productImageUrls, productJsonLd } from "@/lib/structured-data"
 import { cn, formatPrice } from "@/lib/utils"
+import { getCategoryBySlug, getProductBySlug, getProductSlugs, getRelatedProducts } from "@/server/catalog"
 import type { Availability, Product } from "@/types/catalog"
 
-export function generateStaticParams() {
-  return products.map((product) => ({ slug: product.slug }))
+// Published products are prerendered at build time; products added later render on
+// first request, and unknown slugs return notFound() below
+export async function generateStaticParams() {
+  return (await getProductSlugs()).map((slug) => ({ slug }))
 }
-
-// Unknown slugs render the 404 page instead of being generated on demand
-export const dynamicParams = false
 
 export async function generateMetadata({ params }: PageProps<"/bouquets/[slug]">): Promise<Metadata> {
   const { slug } = await params
-  const product = getProductBySlug(slug)
-  if (!product) return {}
+  const product = await getProductBySlug(slug)
+  // Unknown slugs render the 404 page with its own metadata
+  if (!product) notFound()
 
   const title = `${product.name}: ${formatPrice(product.price)}`
-  const isGift = product.category === "gifts"
+  const isGift = isGiftCategory(product.category)
   const description = `${product.description} ${isGift ? "Доставка по Києву разом із букетом або окремо." : "Доставка по Києву, фото букета перед відправкою."}`
   const url = `/bouquets/${product.slug}`
   const images = productImageUrls(product)
@@ -70,19 +69,21 @@ const availabilityDot: Record<Availability, string> = {
 
 export default async function ProductPage({ params }: PageProps<"/bouquets/[slug]">) {
   const { slug } = await params
-  const product = getProductBySlug(slug)
+  const product = await getProductBySlug(slug)
   if (!product) notFound()
 
-  const category = getCategory(product.category)
-  const related = getRelatedProducts(product)
-  const care = careByCategory[product.category]
-  const isGift = product.category === "gifts"
+  const [category, related] = await Promise.all([
+    getCategoryBySlug(product.category),
+    getRelatedProducts(product),
+  ])
+  const care = product.careInstructions.length ? product.careInstructions : null
+  const isGift = isGiftCategory(product.category)
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={jsonLdScript(productJsonLd(product))}
+        dangerouslySetInnerHTML={jsonLdScript(productJsonLd(product, category?.name))}
       />
 
       <div className="container-page pt-5 pb-16 md:pt-8 md:pb-24">
@@ -90,7 +91,7 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
           items={[
             { name: "Головна", href: "/" },
             { name: "Каталог", href: "/bouquets" },
-            ...(category ? [{ name: category.name, href: `/bouquets?category=${category.slug}` }] : []),
+            ...(category ? [{ name: category.name, href: categoryHref(category.slug) }] : []),
             { name: product.name, href: `/bouquets/${product.slug}` },
           ]}
         />
@@ -180,7 +181,8 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
                   ))}
                 </dl>
                 <p className="mt-3">
-                  Оплата карткою, Apple Pay або Google Pay. Детальніше в розділі{" "}
+                  Спосіб оплати й точну вартість доставки менеджер узгодить з вами телефоном після
+                  оформлення. Детальніше в розділі{" "}
                   <Link href="/#delivery" className="text-ink underline underline-offset-4">
                     доставка
                   </Link>

@@ -1,26 +1,34 @@
 import "server-only"
 
+import { cache } from "react"
+
 import type { Prisma } from "@/generated/prisma/client"
 import {
   DEFAULT_SORT,
+  isPurchasable,
   priceRanges,
   productMatchesQuery,
   sortProducts,
   type CatalogFilters,
 } from "@/lib/catalog"
-import { toMinor } from "@/lib/money"
+import { isGiftCategory } from "@/config/site"
+import { fromMinor, toMinor } from "@/lib/money"
 import {
   toStorefrontCategory,
   toStorefrontProduct,
   type DbProductWithRelations,
 } from "@/server/catalog/mappers"
 import { getDb } from "@/server/db"
-import type { Category, Product } from "@/types/catalog"
+import type { Category, CategoryWithPrice, Product } from "@/types/catalog"
 
 /*
- * Server-side catalogue. The only place the storefront reads catalogue data from
- * the database; returns the same Product/Category shapes as the mock data, so pages
- * can switch source without UI changes.
+ * Server-side catalogue: the only place the storefront reads catalogue data from
+ * the database. Returns the same plain Product/Category shapes the UI uses, so
+ * results can be passed straight to Client Components.
+ *
+ * Reads are wrapped in React `cache()`, so a layout and a page asking for the same
+ * data within one request hit the database once. Freshness of prerendered pages is
+ * controlled by the route segment `revalidate` (see src/app/layout.tsx).
  *
  * Structured filters (category, price, stock) run in SQL. Text search and ordering
  * reuse the storefront's own rules so results match exactly; that is fine for a
@@ -29,6 +37,12 @@ import type { Category, Product } from "@/types/catalog"
 
 export type ProductFilters = Partial<Omit<CatalogFilters, "favoritesOnly">>
 
+/** Products and categories for Client Components (cart, search, favourites, navigation) */
+export type StorefrontCatalog = {
+  products: Product[]
+  categories: Category[]
+}
+
 const productInclude = {
   category: { select: { slug: true, name: true } },
   images: { select: { url: true, sortOrder: true } },
@@ -36,9 +50,7 @@ const productInclude = {
 
 type ProductRow = DbProductWithRelations & { category: { slug: string; name: string } }
 
-function compact<T>(items: (T | null)[]) {
-  return items.filter((item): item is T => item !== null)
-}
+const publishedProduct = { isActive: true, category: { isActive: true } } satisfies Prisma.ProductWhereInput
 
 function buildWhere(filters: ProductFilters): Prisma.ProductWhereInput {
   const range = priceRanges.find((r) => r.value === filters.price)
@@ -69,25 +81,45 @@ async function findProducts(filters: ProductFilters): Promise<Product[]> {
   const query = filters.query?.trim() ?? ""
   const matched = rows.flatMap((row) => {
     const product = toStorefrontProduct(row)
-    return product && productMatchesQuery(product, query, row.category.name) ? [product] : []
+    return productMatchesQuery(product, query, row.category.name) ? [product] : []
   })
 
   return sortProducts(matched, filters.sort ?? DEFAULT_SORT)
 }
 
 /** Active categories in display order */
-export async function getCategories(): Promise<Category[]> {
+export const getCategories = cache(async (): Promise<Category[]> => {
   const rows = await getDb().category.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   })
-  return compact(rows.map(toStorefrontCategory))
-}
+  return rows.map(toStorefrontCategory)
+})
+
+export const getCategoryBySlug = cache(async (slug: string): Promise<Category | null> => {
+  const row = await getDb().category.findFirst({ where: { slug, isActive: true } })
+  return row ? toStorefrontCategory(row) : null
+})
+
+/** Homepage categories with the lowest published price in each */
+export const getFeaturedCategories = cache(async (): Promise<CategoryWithPrice[]> => {
+  const db = getDb()
+  const [rows, prices] = await Promise.all([
+    db.category.findMany({
+      where: { isActive: true, isFeatured: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
+    db.product.groupBy({ by: ["categoryId"], where: publishedProduct, _min: { priceMinor: true } }),
+  ])
+  const minByCategory = new Map(prices.map((p) => [p.categoryId, p._min.priceMinor]))
+  return rows.flatMap((row) => {
+    const min = minByCategory.get(row.id)
+    return min != null ? [{ ...toStorefrontCategory(row), priceFrom: fromMinor(min) }] : []
+  })
+})
 
 /** All published products, most popular first */
-export function getProducts(): Promise<Product[]> {
-  return findProducts({})
-}
+export const getProducts = cache((): Promise<Product[]> => findProducts({}))
 
 /** Catalogue listing with the same filters and sorting as /bouquets */
 export function filterProducts(filters: ProductFilters): Promise<Product[]> {
@@ -101,20 +133,50 @@ export async function searchProducts(query: string, limit?: number): Promise<Pro
   return limit ? found.slice(0, limit) : found
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+/** Products flagged for the homepage, most popular first */
+export const getFeaturedProducts = cache(async (limit = 4): Promise<Product[]> => {
+  const rows = await getDb().product.findMany({
+    where: { ...publishedProduct, isFeatured: true },
+    include: productInclude,
+    orderBy: { popularity: "desc" },
+    take: limit,
+  })
+  return rows.map(toStorefrontProduct)
+})
+
+export const getProductBySlug = cache(async (slug: string): Promise<Product | null> => {
   const row = await getDb().product.findFirst({
-    where: { slug, isActive: true, category: { isActive: true } },
+    where: { slug, ...publishedProduct },
     include: productInclude,
   })
   return row ? toStorefrontProduct(row) : null
+})
+
+/** Same category first, then the most popular items from other categories except gifts */
+export async function getRelatedProducts(product: Product, limit = 4): Promise<Product[]> {
+  const others = (await getProducts()).filter(
+    (p) => p.slug !== product.slug && isPurchasable(p.availability)
+  )
+  const sameCategory = others.filter((p) => p.category === product.category)
+  const rest = others
+    .filter((p) => p.category !== product.category && !isGiftCategory(p.category))
+    .sort((a, b) => b.popularity - a.popularity)
+  return [...sameCategory, ...rest].slice(0, limit)
 }
 
 /** Slugs of every published product, e.g. for generateStaticParams and the sitemap */
-export async function getProductSlugs(): Promise<string[]> {
+export const getProductSlugs = cache(async (): Promise<string[]> => {
   const rows = await getDb().product.findMany({
-    where: { isActive: true, category: { isActive: true } },
+    where: publishedProduct,
     select: { slug: true },
     orderBy: { slug: "asc" },
   })
   return rows.map((row) => row.slug)
-}
+})
+
+export const getStorefrontCatalog = cache(
+  async (): Promise<StorefrontCatalog> => {
+    const [products, categories] = await Promise.all([getProducts(), getCategories()])
+    return { products, categories }
+  }
+)

@@ -3,9 +3,12 @@ import Link from "next/link"
 import { SectionHeading } from "@/components/shared/section-heading"
 import { ProductCard } from "@/components/shop/product-card"
 import { Button } from "@/components/ui/button"
-import { popularProducts } from "@/data/catalog"
+import { getFeaturedProducts } from "@/server/catalog"
 
-export function PopularBouquets() {
+export async function PopularBouquets() {
+  const products = await getFeaturedProducts(4)
+  if (!products.length) return null
+
   return (
     <section aria-labelledby="popular-title" className="section-y">
       <div className="container-page">
@@ -20,7 +23,7 @@ export function PopularBouquets() {
           }
         />
         <div className="mt-12 grid grid-cols-2 gap-x-4 gap-y-12 md:mt-16 md:gap-x-6 lg:grid-cols-4">
-          {popularProducts.map((product) => (
+          {products.map((product) => (
             <ProductCard key={product.slug} product={product} />
           ))}
         </div>

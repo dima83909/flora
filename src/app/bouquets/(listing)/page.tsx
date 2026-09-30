@@ -2,24 +2,30 @@ import type { Metadata } from "next"
 import { connection } from "next/server"
 
 import { CatalogView } from "@/components/catalog/catalog-view"
-import { getCategory } from "@/data/catalog"
+import { categoryHref, isGiftCategory } from "@/config/site"
 import { catalogTitle, isRefinedListing, parseFilters } from "@/lib/catalog"
+import { getCategories, getProducts } from "@/server/catalog"
+
+const listFormat = new Intl.ListFormat("uk", { type: "conjunction" })
 
 export async function generateMetadata({ searchParams }: PageProps<"/bouquets">): Promise<Metadata> {
-  const raw = await searchParams
-  const filters = parseFilters({
-    get: (name) => {
-      const value = raw[name]
-      return (Array.isArray(value) ? value[0] : value) ?? null
+  const [raw, categories] = await Promise.all([searchParams, getCategories()])
+  const filters = parseFilters(
+    {
+      get: (name) => {
+        const value = raw[name]
+        return (Array.isArray(value) ? value[0] : value) ?? null
+      },
     },
-  })
-  const category = filters.category ? getCategory(filters.category) : undefined
+    categories.map((c) => c.slug)
+  )
+  const category = filters.category ? categories.find((c) => c.slug === filters.category) : undefined
 
   const title = catalogTitle(category)
   const description = category
-    ? `${category.description}. Доставка по Києву${category.slug === "gifts" ? " разом із букетом або окремо" : ", фото букета перед відправкою"}.`
-    : "Авторські букети, троянди, півонії, композиції, квіти в коробках і подарунки. Доставка по Києву, фото букета перед відправкою."
-  const canonical = category ? `/bouquets?category=${category.slug}` : "/bouquets"
+    ? `${category.description}. Доставка по Києву${isGiftCategory(category.slug) ? " разом із букетом або окремо" : ", фото букета перед відправкою"}.`
+    : `${listFormat.format(categories.map((c, i) => (i ? c.name.toLocaleLowerCase("uk") : c.name)))}. Доставка по Києву, фото букета перед відправкою.`
+  const canonical = category ? categoryHref(category.slug) : "/bouquets"
 
   return {
     title,
@@ -34,5 +40,6 @@ export async function generateMetadata({ searchParams }: PageProps<"/bouquets">)
 export default async function CatalogPage() {
   // Filters live in the URL: render per request so the initial HTML matches them
   await connection()
-  return <CatalogView />
+  const [products, categories] = await Promise.all([getProducts(), getCategories()])
+  return <CatalogView products={products} categories={categories} />
 }

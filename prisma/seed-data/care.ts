@@ -1,12 +1,10 @@
-import type { CategorySlug } from "@/types/catalog"
-
 const vaseCare = [
   "Підріжте стебла під кутом на 2–3 см гострим ножем і відразу поставте у воду.",
   "Налийте прохолодної води на третину вази та додайте пакетик підживлення з букета.",
   "Міняйте воду щодня або через день і тримайте букет подалі від батареї, сонця та фруктів.",
 ]
 
-export const careByCategory: Record<CategorySlug, string[] | null> = {
+export const careByCategory: Record<string, string[] | null> = {
   bouquets: vaseCare,
   roses: [...vaseCare, "Якщо бутон схилився, підріжте стебло й покладіть троянду у ванну з водою на дві години."],
   peonies: [

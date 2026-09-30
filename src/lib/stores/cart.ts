@@ -1,10 +1,11 @@
 "use client"
 
+import { MAX_QUANTITY } from "@/lib/cart-limits"
 import { createStore } from "@/lib/stores/create-store"
 
 export type CartLine = { slug: string; quantity: number }
 
-export const MAX_QUANTITY = 20
+export { MAX_QUANTITY }
 
 const clamp = (n: number) => Math.min(MAX_QUANTITY, Math.max(1, Math.round(n)))
 
@@ -33,6 +34,10 @@ export const cartActions = {
   },
   remove(slug: string) {
     cartStore.setState((lines) => lines.filter((l) => l.slug !== slug))
+  },
+  /** Empties the cart, e.g. after an order is placed */
+  clear() {
+    cartStore.setState(() => [])
   },
   setOpen(open: boolean) {
     cartUiStore.setState(() => ({ open }))

@@ -1,9 +1,8 @@
 /**
- * Seeds the catalogue from the storefront's mock data (src/data), so the
- * database and the current UI describe exactly the same products.
+ * Seeds the catalogue from the fixtures in prisma/seed-data.
  *
  * Idempotent: categories and products are upserted by slug, so it can be re-run
- * after editing the mock data. Nothing is deleted, because orders may reference
+ * after editing the fixtures. Nothing is deleted, because orders may reference
  * existing products.
  */
 import "dotenv/config"
@@ -11,8 +10,8 @@ import "dotenv/config"
 import { PrismaPg } from "@prisma/adapter-pg"
 
 import { PrismaClient } from "../src/generated/prisma/client"
-import { careByCategory } from "../src/data/care"
-import { categories, popularProducts, products } from "../src/data/catalog"
+import { careByCategory } from "./seed-data/care"
+import { categories, products } from "./seed-data/catalog"
 import { toMinor } from "../src/lib/money"
 import { toStockFields } from "../src/server/catalog/availability"
 
@@ -24,7 +23,14 @@ if (!connectionString) {
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 
 async function main() {
-  const featuredSlugs = new Set(popularProducts.map((p) => p.slug))
+  // The homepage shows the four most popular items labelled "popular"
+  const featuredSlugs = new Set(
+    products
+      .filter((p) => p.label === "popular")
+      .sort((a, b) => b.popularity - a.popularity)
+      .slice(0, 4)
+      .map((p) => p.slug)
+  )
 
   await prisma.$transaction(async (tx) => {
     const categoryIds = new Map<string, string>()
@@ -37,6 +43,7 @@ async function main() {
         sortOrder: (index + 1) * 10,
         isActive: true,
         isFeatured: category.featured ?? false,
+        showInNav: category.inNavigation ?? false,
       }
       const row = await tx.category.upsert({
         where: { slug: category.slug },
@@ -74,7 +81,7 @@ async function main() {
         select: { id: true },
       })
 
-      // Real photography, when present in the mock data, replaces the stored gallery
+      // Real photography, when present in the fixtures, replaces the stored gallery
       if (product.images?.length) {
         await tx.productImage.deleteMany({ where: { productId: row.id } })
         await tx.productImage.createMany({

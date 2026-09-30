@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { ShoppingBagIcon, XIcon } from "lucide-react"
 
+import { useCatalog } from "@/components/catalog/catalog-provider"
 import { Price } from "@/components/shop/price"
 import { ProductImage } from "@/components/shop/product-image"
 import { QuantityStepper } from "@/components/shop/quantity-stepper"
@@ -16,7 +17,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { siteConfig } from "@/config/site"
-import { getProductBySlug } from "@/data/catalog"
 import { pluralize } from "@/lib/catalog"
 import { cartActions, useCartCount, useCartLines, useCartOpen } from "@/lib/stores/cart"
 import { formatPrice } from "@/lib/utils"
@@ -45,9 +45,11 @@ export function CartSheet() {
   const open = useCartOpen()
   const lines = useCartLines()
   const count = useCartCount()
+  const { getProduct } = useCatalog()
 
+  // Lines whose product is no longer published are left out
   const items = lines.flatMap((line) => {
-    const product = getProductBySlug(line.slug)
+    const product = getProduct(line.slug)
     return product ? [{ ...line, product }] : []
   })
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
@@ -132,19 +134,13 @@ export function CartSheet() {
                 <span className="text-[0.9375rem] text-ink">Разом</span>
                 <span className="text-xl font-medium text-ink tabular-nums">{formatPrice(subtotal)}</span>
               </div>
-              <Button size="lg" disabled className="w-full">
-                Оформити замовлення
+              <Button asChild size="lg" className="w-full">
+                <Link href="/checkout" onClick={() => cartActions.setOpen(false)}>
+                  Оформити замовлення
+                </Link>
               </Button>
               <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">
-                Онлайн-оформлення запрацює найближчим часом. Поки що надішліть список флористу в{" "}
-                <a href={siteConfig.contacts.telegram} target="_blank" rel="noreferrer" className="text-ink underline underline-offset-4">
-                  Telegram
-                </a>{" "}
-                або зателефонуйте{" "}
-                <a href={siteConfig.contacts.phoneHref} className="text-ink underline underline-offset-4 whitespace-nowrap">
-                  {siteConfig.contacts.phone}
-                </a>
-                .
+                Онлайн-оплати немає: після оформлення менеджер зателефонує й узгодить доставку та оплату.
               </p>
             </SheetFooter>
           </>

@@ -14,7 +14,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:check": "tsx --conditions=react-server scripts/check-catalog.ts"
+    "db:check": "tsx --conditions=react-server scripts/check-catalog.ts && tsx --conditions=react-server scripts/check-orders.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
@@ -28,7 +28,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

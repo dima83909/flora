@@ -1,6 +1,12 @@
-import type { Category, CategorySlug, Product } from "@/types/catalog"
+import type { Category, Product } from "../../src/types/catalog"
 
-// Mock catalogue until products come from a real data source.
+/** Care tips are added per category when seeding */
+export type FixtureProduct = Omit<Product, "careInstructions">
+
+/*
+ * Seed fixtures: the initial catalogue loaded into the database by prisma/seed.ts.
+ * The storefront reads the database only; edit products there (or here and re-seed).
+ */
 
 export const categories: Category[] = [
   {
@@ -16,6 +22,7 @@ export const categories: Category[] = [
     description: "Кенійські, еквадорські та садові троянди без зайвого декору",
     visual: { kind: "bouquet", variant: "rose-cream" },
     featured: true,
+    inNavigation: true,
   },
   {
     slug: "peonies",
@@ -23,6 +30,7 @@ export const categories: Category[] = [
     description: "Восени привозимо з Чилі та Нової Зеландії під замовлення",
     visual: { kind: "bouquet", variant: "peony-pink" },
     featured: true,
+    inNavigation: true,
   },
   {
     slug: "tulips",
@@ -42,6 +50,7 @@ export const categories: Category[] = [
     description: "Не потребують вази, стоять до двох тижнів на флористичній губці",
     visual: { kind: "bouquet", variant: "berry", container: "box" },
     featured: true,
+    inNavigation: true,
   },
   {
     slug: "gifts",
@@ -49,10 +58,11 @@ export const categories: Category[] = [
     description: "Свічки, кераміка й шоколад, які можна додати до квітів",
     visual: { kind: "gift", variant: "candle" },
     featured: true,
+    inNavigation: true,
   },
 ]
 
-export const products: Product[] = [
+export const products: FixtureProduct[] = [
   // Букети
   {
     slug: "morning-in-provence",
@@ -421,44 +431,4 @@ export const products: Product[] = [
     addedAt: "2026-09-20",
     visual: { kind: "gift", variant: "chocolate" },
   },
-]
-
-export function getProductBySlug(slug: string) {
-  return products.find((product) => product.slug === slug)
-}
-
-export function getCategory(slug: CategorySlug) {
-  return categories.find((category) => category.slug === slug)
-}
-
-export function isCategorySlug(value: string | null | undefined): value is CategorySlug {
-  return categories.some((category) => category.slug === value)
-}
-
-export function getCategoryMinPrice(slug: CategorySlug) {
-  return Math.min(...products.filter((p) => p.category === slug).map((p) => p.price))
-}
-
-export const popularProducts = products
-  .filter((product) => product.label === "popular")
-  .sort((a, b) => b.popularity - a.popularity)
-  .slice(0, 4)
-
-/** Same category first, then the most popular items from elsewhere */
-export function getRelatedProducts(product: Product, limit = 4) {
-  const others = products.filter((p) => p.slug !== product.slug && p.availability !== "out_of_stock")
-  const sameCategory = others.filter((p) => p.category === product.category)
-  const rest = others
-    .filter((p) => p.category !== product.category && p.category !== "gifts")
-    .sort((a, b) => b.popularity - a.popularity)
-  return [...sameCategory, ...rest].slice(0, limit)
-}
-
-/** Flowers that arrived at the studio this week (shown in the hero) */
-export const weeklyStems = [
-  "Гортензія Magical, Нідерланди",
-  "Кущові троянди Bombastic",
-  "Айстри з господарства під Обуховом",
-  "Евкаліпт цинерея",
-  "Лагурус і сухий лунарій",
 ]

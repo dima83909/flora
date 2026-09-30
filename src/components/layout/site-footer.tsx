@@ -1,10 +1,15 @@
 import Link from "next/link"
 
 import { Logo } from "@/components/brand/logo"
-import { footerNav, siteConfig } from "@/config/site"
+import { buildFooterShopNav, footerCustomerNav, siteConfig } from "@/config/site"
+import { getCategories } from "@/server/catalog"
 
-export function SiteFooter() {
+export async function SiteFooter() {
   const { contacts } = siteConfig
+  const footerNav = [
+    { title: "Магазин", items: buildFooterShopNav(await getCategories()) },
+    { title: "Клієнтам", items: footerCustomerNav },
+  ]
 
   return (
     <footer className="mt-auto border-t bg-linen/70">
@@ -61,7 +66,7 @@ export function SiteFooter() {
       <div className="border-t border-border/80">
         <div className="container-page flex flex-col gap-2 py-6 text-[0.8125rem] text-muted-foreground sm:flex-row sm:justify-between">
           <p>© {new Date().getFullYear()} {siteConfig.name}. Квіткова майстерня, Київ.</p>
-          <p>Оплата карткою, Apple Pay та Google Pay</p>
+          <p>Доставку й оплату узгоджує менеджер телефоном</p>
         </div>
       </div>
     </footer>

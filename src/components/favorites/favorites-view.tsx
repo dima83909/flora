@@ -3,9 +3,9 @@
 import Link from "next/link"
 
 import { GiftArt } from "@/components/brand/gift-art"
+import { useCatalog } from "@/components/catalog/catalog-provider"
 import { ProductCard } from "@/components/shop/product-card"
 import { Button } from "@/components/ui/button"
-import { getProductBySlug } from "@/data/catalog"
 import { pluralize } from "@/lib/catalog"
 import { useFavorites } from "@/lib/stores/favorites"
 import { useHydrated } from "@/lib/use-hydrated"
@@ -14,9 +14,10 @@ import type { Product } from "@/types/catalog"
 export function FavoritesView() {
   const hydrated = useHydrated()
   const slugs = useFavorites()
+  const { getProduct } = useCatalog()
   // Most recently saved first; slugs of products no longer in the catalogue are skipped
   const items = [...slugs].reverse().flatMap((slug) => {
-    const product = getProductBySlug(slug)
+    const product = getProduct(slug)
     return product ? [product] : ([] as Product[])
   })
 

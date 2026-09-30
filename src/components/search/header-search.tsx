@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { SearchIcon, XIcon } from "lucide-react"
 
+import { useCatalog } from "@/components/catalog/catalog-provider"
 import { Price } from "@/components/shop/price"
 import { ProductImage } from "@/components/shop/product-image"
 import { Button } from "@/components/ui/button"
@@ -16,7 +17,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { categories, products } from "@/data/catalog"
 import { pluralize, searchProducts } from "@/lib/catalog"
 
 const MAX_RESULTS = 5
@@ -27,8 +27,9 @@ export function HeaderSearch() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const deferredQuery = useDeferredValue(query)
+  const { products, categories, getCategory } = useCatalog()
 
-  const matches = searchProducts(products, deferredQuery)
+  const matches = searchProducts(products, deferredQuery, undefined, categories)
   const visible = matches.slice(0, MAX_RESULTS)
   const trimmed = query.trim()
   const allResultsHref = `/bouquets?q=${encodeURIComponent(trimmed)}`
@@ -131,7 +132,7 @@ export function HeaderSearch() {
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-heading text-[1.0625rem] text-ink">{product.name}</span>
                         <span className="block truncate text-sm text-muted-foreground">
-                          {categories.find((c) => c.slug === product.category)?.name}
+                          {getCategory(product.category)?.name}
                         </span>
                       </span>
                       <Price price={product.price} oldPrice={product.oldPrice} className="shrink-0 flex-col items-end gap-0" />

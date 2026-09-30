@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next"
 import { Commissioner, Literata } from "next/font/google"
 
+import { CatalogProvider } from "@/components/catalog/catalog-provider"
 import { SiteFooter } from "@/components/layout/site-footer"
 import { SiteHeader } from "@/components/layout/site-header"
 import { siteConfig } from "@/config/site"
+import { getStorefrontCatalog } from "@/server/catalog"
 
 import "./globals.css"
 
@@ -37,11 +39,16 @@ export const metadata: Metadata = {
   twitter: { card: "summary" },
 }
 
+// Prerendered pages refresh catalogue data from the database at most every 5 minutes
+export const revalidate = 300
+
 export const viewport: Viewport = {
   themeColor: "#fbf8f3",
 }
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const { products, categories } = await getStorefrontCatalog()
+
   return (
     <html lang="uk" className={`${literata.variable} ${commissioner.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
@@ -51,11 +58,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Перейти до змісту
         </a>
-        <SiteHeader />
-        <main id="main" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
+        <CatalogProvider products={products} categories={categories}>
+          <SiteHeader />
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <SiteFooter />
+        </CatalogProvider>
       </body>
     </html>
   )

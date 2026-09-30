@@ -1,5 +1,4 @@
 import { siteConfig } from "@/config/site"
-import { getCategory } from "@/data/catalog"
 import type { Availability, Product } from "@/types/catalog"
 
 export function absoluteUrl(path: string) {
@@ -18,7 +17,7 @@ export function productImageUrls(product: Pick<Product, "images">) {
   return (product.images ?? []).map(absoluteUrl)
 }
 
-export function productJsonLd(product: Product) {
+export function productJsonLd(product: Product, categoryName?: string) {
   const url = absoluteUrl(`/bouquets/${product.slug}`)
   const images = productImageUrls(product)
 
@@ -29,7 +28,7 @@ export function productJsonLd(product: Product) {
     description: product.description,
     sku: product.slug,
     url,
-    category: getCategory(product.category)?.name,
+    ...(categoryName ? { category: categoryName } : {}),
     // Only real photos are published; the SVG illustrations are placeholders
     ...(images.length ? { image: images } : {}),
     brand: { "@type": "Brand", name: siteConfig.name },

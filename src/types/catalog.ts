@@ -1,15 +1,6 @@
 import type { FlowerArtContainer, FlowerArtVariant } from "@/components/brand/flower-art"
 import type { GiftArtVariant } from "@/components/brand/gift-art"
 
-export type CategorySlug =
-  | "bouquets"
-  | "roses"
-  | "peonies"
-  | "tulips"
-  | "arrangements"
-  | "boxes"
-  | "gifts"
-
 export type Availability = "in_stock" | "low_stock" | "preorder" | "out_of_stock"
 
 export type ProductLabel = "new" | "popular"
@@ -23,12 +14,15 @@ export type Product = {
   /** Latin, SEO-friendly URL segment: /bouquets/[slug] */
   slug: string
   name: string
-  category: CategorySlug
+  /** Slug of the category; categories come from the database */
+  category: string
   /** Short list of the main stems, shown on cards */
   composition: string
   /** Full stem list with quantities, shown on the product page */
   stems: string[]
   description: string
+  /** Care tips shown on the product page; empty for non-floral gifts */
+  careInstructions: string[]
   /** Height and diameter, or dimensions for gifts */
   size: string
   price: number
@@ -52,11 +46,16 @@ export type Product = {
 }
 
 export type Category = {
-  slug: CategorySlug
+  slug: string
   name: string
   description: string
   /** Illustration used on the homepage category tile */
   visual: ProductVisual
   /** Shown on the homepage */
   featured?: boolean
+  /** Linked from the main header navigation */
+  inNavigation?: boolean
 }
+
+/** Category with the lowest price among its published products */
+export type CategoryWithPrice = Category & { priceFrom: number }

@@ -1,5 +1,9 @@
 // Flora storefront database schema.
 //
+// Business model: products → cart (browser) → guest order → manager calls the
+// customer to agree delivery and payment. There are no customer accounts, online
+// payments or delivery calculation, so the schema has no users, payments or addresses.
+//
 // Conventions
 // - Money is stored as integer minor units (kopiykas: 1 UAH = 100) in `...Minor` columns,
 //   so arithmetic is exact and values serialise without Decimal conversion.
@@ -19,13 +23,6 @@ datasource db {
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-enum UserRole {
-  CUSTOMER
-  ADMIN
-
-  @@map("user_role")
-}
-
 /// Stock policy of a product. "Low stock" is derived from `stock`, not stored.
 enum ProductAvailability {
   /// Can be assembled from flowers on hand; ships within the same-day window
@@ -38,115 +35,19 @@ enum ProductAvailability {
   @@map("product_availability")
 }
 
+/// Order lifecycle as handled by a manager on the phone
 enum OrderStatus {
-  PENDING
+  /// Placed by the customer, nobody has called yet
+  NEW
+  /// Manager has reached the customer
+  CONTACTED
+  /// Delivery, date and payment agreed
   CONFIRMED
-  PREPARING
-  OUT_FOR_DELIVERY
-  DELIVERED
+  /// Delivered or picked up
+  COMPLETED
   CANCELLED
 
   @@map("order_status")
-}
-
-enum PaymentStatus {
-  PENDING
-  AUTHORIZED
-  PAID
-  FAILED
-  REFUNDED
-  CANCELLED
-
-  @@map("payment_status")
-}
-
-enum PaymentProvider {
-  /// Recorded by staff (bank transfer, terminal in the studio)
-  MANUAL
-  CASH_ON_DELIVERY
-  LIQPAY
-  MONOBANK
-  WAYFORPAY
-
-  @@map("payment_provider")
-}
-
-enum DeliveryMethod {
-  COURIER
-  PICKUP
-
-  @@map("delivery_method")
-}
-
-enum DiscountType {
-  /// `discountValue` is a whole percentage, 1–100
-  PERCENT
-  /// `discountValue` is an amount in minor units
-  FIXED_AMOUNT
-
-  @@map("discount_type")
-}
-
-// ─── Customers ───────────────────────────────────────────────────────────────
-
-/// A customer account. Authentication tables are added in the auth stage;
-/// guest checkout does not require a user.
-model User {
-  id              String    @id @default(cuid())
-  email           String?   @unique
-  phone           String?   @unique
-  name            String?
-  role            UserRole  @default(CUSTOMER)
-  emailVerifiedAt DateTime? @map("email_verified_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  favorites Favorite[]
-  addresses Address[]
-  orders    Order[]
-
-  @@map("users")
-}
-
-/// Saved delivery address. Orders copy the address, so editing it never
-/// changes past orders.
-model Address {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  label          String?
-  recipientName  String   @map("recipient_name")
-  recipientPhone String   @map("recipient_phone")
-  city           String   @default("Київ")
-  street         String
-  building       String
-  apartment      String?
-  entrance       String?
-  floor          String?
-  intercom       String?
-  comment        String?
-  /// At most one default per user (partial unique index in migration)
-  isDefault      Boolean  @default(false) @map("is_default")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders Order[]
-
-  @@index([userId])
-  @@map("addresses")
-}
-
-model Favorite {
-  userId    String   @map("user_id")
-  productId String   @map("product_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@id([userId, productId])
-  @@index([productId])
-  @@map("favorites")
 }
 
 // ─── Catalogue ───────────────────────────────────────────────────────────────
@@ -164,6 +65,8 @@ model Category {
   isActive    Boolean  @default(true) @map("is_active")
   /// Shown on the homepage
   isFeatured  Boolean  @default(false) @map("is_featured")
+  /// Linked from the main header navigation, in `sortOrder`
+  showInNav   Boolean  @default(false) @map("show_in_nav")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -208,7 +111,6 @@ model Product {
 
   category   Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   images     ProductImage[]
-  favorites  Favorite[]
   orderItems OrderItem[]
 
   @@index([categoryId, isActive])
@@ -234,117 +136,54 @@ model ProductImage {
   @@map("product_images")
 }
 
-// ─── Promotions ──────────────────────────────────────────────────────────────
-
-model PromoCode {
-  id               String       @id @default(cuid())
-  /// Stored upper-case; normalise user input before lookup
-  code             String       @unique
-  description      String?
-  discountType     DiscountType @map("discount_type")
-  discountValue    Int          @map("discount_value")
-  minOrderMinor    Int?         @map("min_order_minor")
-  maxDiscountMinor Int?         @map("max_discount_minor")
-  startsAt         DateTime?    @map("starts_at")
-  expiresAt        DateTime?    @map("expires_at")
-  /// Total redemptions allowed; null means unlimited
-  usageLimit       Int?         @map("usage_limit")
-  usageCount       Int          @default(0) @map("usage_count")
-  isActive         Boolean      @default(true) @map("is_active")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-
-  orders Order[]
-
-  @@map("promo_codes")
-}
-
 // ─── Orders ──────────────────────────────────────────────────────────────────
 
-/// Customer, address and pricing are snapshots taken at checkout.
+/// Guest order. Delivery address, date, time, delivery cost and payment are agreed
+/// by phone, so the order stores only what the customer typed and the goods total.
 model Order {
-  id     String @id @default(cuid())
-  /// Human-facing sequential number shown to customers
-  number Int    @unique @default(autoincrement())
+  id     String      @id @default(cuid())
+  /// Human-facing sequential number, starts at 1001
+  number Int         @unique @default(autoincrement())
+  status OrderStatus @default(NEW)
 
-  /// Null for guest checkout; kept null if the account is deleted
-  userId String? @map("user_id")
-
-  customerName  String  @map("customer_name")
-  customerPhone String  @map("customer_phone")
-  customerEmail String? @map("customer_email")
-
-  /// Flowers are often sent to someone else
-  recipientName  String? @map("recipient_name")
-  recipientPhone String? @map("recipient_phone")
-
-  deliveryMethod    DeliveryMethod @default(COURIER) @map("delivery_method")
-  /// Source address, if chosen from the saved list (reference only)
-  addressId         String?        @map("address_id")
-  deliveryCity      String?        @map("delivery_city")
-  deliveryStreet    String?        @map("delivery_street")
-  deliveryBuilding  String?        @map("delivery_building")
-  deliveryApartment String?        @map("delivery_apartment")
-  deliveryEntrance  String?        @map("delivery_entrance")
-  deliveryFloor     String?        @map("delivery_floor")
-  deliveryIntercom  String?        @map("delivery_intercom")
-  deliveryZone      String?        @map("delivery_zone")
-  deliveryDate      DateTime?      @map("delivery_date") @db.Date
-  /// Local Kyiv time window, "HH:MM"
-  deliverySlotStart String?        @map("delivery_slot_start") @db.VarChar(5)
-  deliverySlotEnd   String?        @map("delivery_slot_end") @db.VarChar(5)
-
-  /// Text for the handwritten card
-  cardMessage     String? @map("card_message")
+  customerName    String  @map("customer_name")
+  /// Normalised to E.164, e.g. +380501234567
+  customerPhone   String  @map("customer_phone")
+  customerCity    String  @map("customer_city")
   customerComment String? @map("customer_comment")
 
-  subtotalMinor     Int    @map("subtotal_minor")
-  deliveryCostMinor Int    @default(0) @map("delivery_cost_minor")
-  discountMinor     Int    @default(0) @map("discount_minor")
-  totalMinor        Int    @map("total_minor")
-  currency          String @default("UAH") @db.VarChar(3)
+  /// Sum of item totals, calculated on the server from database prices
+  subtotalMinor Int    @map("subtotal_minor")
+  currency      String @default("UAH") @db.VarChar(3)
 
-  promoCodeId String? @map("promo_code_id")
-  /// Code as entered, kept even if the promo code is later removed
-  promoCode   String? @map("promo_code")
+  /// Internal note for managers; never shown to the customer
+  managerNote String? @map("manager_note")
 
-  status        OrderStatus   @default(PENDING)
-  paymentStatus PaymentStatus @default(PENDING) @map("payment_status")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  confirmedAt DateTime? @map("confirmed_at")
-  deliveredAt DateTime? @map("delivered_at")
-  cancelledAt DateTime? @map("cancelled_at")
+  items OrderItem[]
 
-  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  address   Address?   @relation(fields: [addressId], references: [id], onDelete: SetNull)
-  promo     PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
-  items     OrderItem[]
-  payments  Payment[]
-
-  @@index([userId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
-  @@index([deliveryDate])
-  @@index([promoCodeId])
+  @@index([createdAt(sort: Desc)])
+  @@index([customerPhone])
   @@map("orders")
 }
 
-/// Product details are copied at checkout so past orders never change.
+/// Snapshot of a product at order time, so past orders never change when the
+/// catalogue is edited and survive the product being deleted.
 model OrderItem {
   id        String  @id @default(cuid())
   orderId   String  @map("order_id")
-  /// Reference only; null once the product is deleted
+  /// Reference only; set to null if the product is deleted
   productId String? @map("product_id")
 
-  productSlug         String  @map("product_slug")
-  productName         String  @map("product_name")
-  productComposition  String? @map("product_composition")
-  productImageUrl     String? @map("product_image_url")
-  unitPriceMinor      Int     @map("unit_price_minor")
-  compareAtPriceMinor Int?    @map("compare_at_price_minor")
-  quantity            Int
-  lineTotalMinor      Int     @map("line_total_minor")
+  productName    String @map("product_name")
+  productSlug    String @map("product_slug")
+  composition    String
+  quantity       Int
+  unitPriceMinor Int    @map("unit_price_minor")
+  totalMinor     Int    @map("total_minor")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -354,30 +193,4 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
-}
-
-/// One attempt to charge an order. Provider-agnostic; integrations fill
-/// `providerPaymentId` and `rawPayload`.
-model Payment {
-  id                String          @id @default(cuid())
-  orderId           String          @map("order_id")
-  provider          PaymentProvider
-  providerPaymentId String?         @map("provider_payment_id")
-  status            PaymentStatus   @default(PENDING)
-  amountMinor       Int             @map("amount_minor")
-  currency          String          @default("UAH") @db.VarChar(3)
-  failureReason     String?         @map("failure_reason")
-  /// Last provider response, for reconciliation and support
-  rawPayload        Json?           @map("raw_payload")
-  paidAt            DateTime?       @map("paid_at")
-  createdAt         DateTime        @default(now()) @map("created_at")
-  updatedAt         DateTime        @updatedAt @map("updated_at")
-
-  /// Payments are financial records: an order with payments cannot be deleted
-  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
-
-  @@unique([provider, providerPaymentId])
-  @@index([orderId])
-  @@index([status])
-  @@map("payments")
 }

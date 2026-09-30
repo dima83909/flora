@@ -2,7 +2,7 @@ import Link from "next/link"
 
 import { FlowerArt } from "@/components/brand/flower-art"
 import { Button } from "@/components/ui/button"
-import { weeklyStems } from "@/data/catalog"
+import { weeklyStems } from "@/data/studio"
 
 export function Hero() {
   return (

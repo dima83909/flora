@@ -20,8 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { siteConfig } from "@/config/site"
-import { categories, getCategory, products } from "@/data/catalog"
+import { categoryHref, siteConfig } from "@/config/site"
 import {
   applyFilters,
   catalogTitle,
@@ -35,6 +34,7 @@ import {
   type CatalogFilters,
 } from "@/lib/catalog"
 import { useFavorites } from "@/lib/stores/favorites"
+import type { Category, Product } from "@/types/catalog"
 import { cn } from "@/lib/utils"
 
 const EMPTY_FILTERS: CatalogFilters = {
@@ -48,14 +48,25 @@ const EMPTY_FILTERS: CatalogFilters = {
 
 const SEARCH_DEBOUNCE_MS = 250
 
-export function CatalogView() {
+type CatalogViewProps = {
+  products: Product[]
+  categories: Category[]
+}
+
+export function CatalogView({ products, categories }: CatalogViewProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const filters = useMemo(() => parseFilters(searchParams), [searchParams])
+  const filters = useMemo(
+    () => parseFilters(searchParams, categories.map((c) => c.slug)),
+    [searchParams, categories]
+  )
   const favorites = useFavorites()
 
-  const results = useMemo(() => applyFilters(products, filters, favorites), [filters, favorites])
-  const category = filters.category ? getCategory(filters.category) : null
+  const results = useMemo(
+    () => applyFilters(products, filters, favorites, categories),
+    [products, filters, favorites, categories]
+  )
+  const category = filters.category ? categories.find((c) => c.slug === filters.category) : null
   const panelCount = countPanelFilters(filters)
 
   // The URL is the single source of truth, so filters survive reloads, sharing and back navigation.
@@ -112,7 +123,7 @@ export function CatalogView() {
         items={[
           { name: "Головна", href: "/" },
           { name: "Каталог", href: "/bouquets" },
-          ...(category ? [{ name: category.name, href: `/bouquets?category=${category.slug}` }] : []),
+          ...(category ? [{ name: category.name, href: categoryHref(category.slug) }] : []),
         ]}
       />
       <header className="max-w-2xl pt-6 md:pt-10">

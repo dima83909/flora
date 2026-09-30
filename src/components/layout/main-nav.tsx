@@ -1,22 +1,24 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useMemo } from "react"
 import Link from "next/link"
 
-import { mainNav } from "@/config/site"
+import { useCatalog } from "@/components/catalog/catalog-provider"
+import { buildMainNav, type NavItem } from "@/config/site"
 import { useActiveNavHref } from "@/lib/use-active-nav"
 import { cn } from "@/lib/utils"
 
 type NavListProps = {
+  items: NavItem[]
   activeHref: string | null
   variant: "desktop" | "mobile"
   onNavigate?: () => void
 }
 
-function NavList({ activeHref, variant, onNavigate }: NavListProps) {
+function NavList({ items, activeHref, variant, onNavigate }: NavListProps) {
   return (
     <ul className={variant === "desktop" ? "flex items-center gap-7 xl:gap-8" : undefined}>
-      {mainNav.map((item) => {
+      {items.map((item) => {
         const active = item.href === activeHref
         return (
           <li key={item.href}>
@@ -45,14 +47,18 @@ function NavList({ activeHref, variant, onNavigate }: NavListProps) {
 }
 
 function ActiveNavList(props: Omit<NavListProps, "activeHref">) {
-  return <NavList activeHref={useActiveNavHref()} {...props} />
+  return <NavList activeHref={useActiveNavHref(props.items)} {...props} />
 }
 
+type MainNavProps = Omit<NavListProps, "activeHref" | "items">
+
 /** Active state depends on search params; the fallback keeps static pages prerenderable */
-export function MainNav(props: Omit<NavListProps, "activeHref">) {
+export function MainNav(props: MainNavProps) {
+  const { categories } = useCatalog()
+  const items = useMemo(() => buildMainNav(categories), [categories])
   return (
-    <Suspense fallback={<NavList activeHref={null} {...props} />}>
-      <ActiveNavList {...props} />
+    <Suspense fallback={<NavList items={items} activeHref={null} {...props} />}>
+      <ActiveNavList items={items} {...props} />
     </Suspense>
   )
 }

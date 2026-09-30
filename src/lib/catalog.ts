@@ -1,5 +1,7 @@
-import { categories, isCategorySlug } from "@/data/catalog"
-import type { Availability, CategorySlug, Product } from "@/types/catalog"
+import type { Availability, Category, Product } from "@/types/catalog"
+
+/** Category fields the shared catalogue logic needs */
+export type CategoryRef = Pick<Category, "slug" | "name">
 
 export const sortOptions = [
   { value: "popular", label: "Спочатку популярні", short: "Популярні" },
@@ -21,7 +23,7 @@ export type PriceRangeValue = (typeof priceRanges)[number]["value"]
 
 export type CatalogFilters = {
   query: string
-  category: CategorySlug | null
+  category: string | null
   price: PriceRangeValue | null
   inStockOnly: boolean
   favoritesOnly: boolean
@@ -50,13 +52,17 @@ function isPriceRange(value: string | null): value is PriceRangeValue {
   return priceRanges.some((range) => range.value === value)
 }
 
-export function parseFilters(params: ParamsLike): CatalogFilters {
-  const category = params.get(PARAM.category)
+/**
+ * Reads filters from URL search params. When `categorySlugs` is given, an unknown
+ * category is ignored (the listing falls back to all products).
+ */
+export function parseFilters(params: ParamsLike, categorySlugs?: readonly string[]): CatalogFilters {
+  const category = params.get(PARAM.category)?.trim() || null
   const price = params.get(PARAM.price)
   const sort = params.get(PARAM.sort)
   return {
     query: params.get(PARAM.query)?.trim() ?? "",
-    category: isCategorySlug(category) ? category : null,
+    category: category && (!categorySlugs || categorySlugs.includes(category)) ? category : null,
     price: isPriceRange(price) ? price : null,
     inStockOnly: params.get(PARAM.inStock) === "1",
     favoritesOnly: params.get(PARAM.favorites) === "1",
@@ -107,10 +113,6 @@ export function productMatchesQuery(product: Product, query: string, categoryNam
     .every((word) => haystack.includes(word))
 }
 
-function matchesQuery(product: Product, query: string) {
-  return productMatchesQuery(product, query, categories.find((c) => c.slug === product.category)?.name)
-}
-
 export function isPurchasable(availability: Availability) {
   return availability !== "out_of_stock"
 }
@@ -118,8 +120,10 @@ export function isPurchasable(availability: Availability) {
 export function applyFilters(
   items: Product[],
   filters: CatalogFilters,
-  favorites: readonly string[]
+  favorites: readonly string[],
+  categories: readonly CategoryRef[] = []
 ): Product[] {
+  const categoryNames = new Map(categories.map((c) => [c.slug, c.name]))
   const range = priceRanges.find((r) => r.value === filters.price)
 
   const result = items.filter((product) => {
@@ -128,7 +132,7 @@ export function applyFilters(
     if (filters.inStockOnly && !(product.availability === "in_stock" || product.availability === "low_stock"))
       return false
     if (filters.favoritesOnly && !favorites.includes(product.slug)) return false
-    return matchesQuery(product, filters.query)
+    return productMatchesQuery(product, filters.query, categoryNames.get(product.category))
   })
 
   return sortProducts(result, filters.sort)
@@ -141,11 +145,15 @@ const sorters: Record<SortValue, (a: Product, b: Product) => number> = {
   "price-desc": (a, b) => b.price - a.price,
 }
 
-/** Sorts in place; unavailable items always sink to the end, whatever the sort */
+/**
+ * Sorts in place; unavailable items always sink to the end, whatever the sort.
+ * Ties fall back to popularity, then slug, so the order never depends on the
+ * order rows come back from the database.
+ */
 export function sortProducts(items: Product[], sort: SortValue) {
   return items.sort((a, b) => {
     const stock = Number(!isPurchasable(a.availability)) - Number(!isPurchasable(b.availability))
-    return stock || sorters[sort](a, b)
+    return stock || sorters[sort](a, b) || b.popularity - a.popularity || a.slug.localeCompare(b.slug)
   })
 }
 
@@ -154,13 +162,19 @@ export function catalogTitle(category?: { name: string } | null) {
 }
 
 /** Quick search used by the header: purchasable and popular items first */
-export function searchProducts(items: Product[], query: string, limit?: number) {
+export function searchProducts(
+  items: Product[],
+  query: string,
+  limit?: number,
+  categories: readonly CategoryRef[] = []
+) {
   const trimmed = query.trim()
   if (!trimmed) return []
   const found = applyFilters(
     items,
     { query: trimmed, category: null, price: null, inStockOnly: false, favoritesOnly: false, sort: DEFAULT_SORT },
-    []
+    [],
+    categories
   )
   return limit ? found.slice(0, limit) : found
 }

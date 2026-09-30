@@ -25,30 +25,39 @@ export type NavItem = {
   href: string
 }
 
-export const mainNav: NavItem[] = [
-  { title: "Каталог", href: "/bouquets" },
-  { title: "Троянди", href: "/bouquets?category=roses" },
-  { title: "Півонії", href: "/bouquets?category=peonies" },
-  { title: "Квіти в коробках", href: "/bouquets?category=boxes" },
-  { title: "Подарунки", href: "/bouquets?category=gifts" },
-  { title: "Доставка", href: "/#delivery" },
-]
+/**
+ * Category with non-floral add-ons (candles, ceramics, chocolate). Changes product
+ * copy (no bouquet photo or care tips) and is left out of "related" suggestions.
+ */
+export const GIFT_CATEGORY_SLUG = "gifts"
 
-export const footerNav: { title: string; items: NavItem[] }[] = [
-  {
-    title: "Магазин",
-    items: [
-      { title: "Усі букети", href: "/bouquets" },
-      { title: "Композиції", href: "/bouquets?category=arrangements" },
-      { title: "Тюльпани", href: "/bouquets?category=tulips" },
-      { title: "Обране", href: "/favorites" },
-    ],
-  },
-  {
-    title: "Клієнтам",
-    items: [
-      { title: "Доставка й оплата", href: "/#delivery" },
-      { title: "Нові надходження", href: "/bouquets?sort=new" },
-    ],
-  },
+export function isGiftCategory(slug: string) {
+  return slug === GIFT_CATEGORY_SLUG
+}
+
+export function categoryHref(slug: string) {
+  return `/bouquets?category=${encodeURIComponent(slug)}`
+}
+
+/** Header navigation: the catalogue, categories flagged in the database, then delivery */
+export function buildMainNav(categories: { slug: string; name: string; inNavigation?: boolean }[]): NavItem[] {
+  return [
+    { title: "Каталог", href: "/bouquets" },
+    ...categories.filter((c) => c.inNavigation).map((c) => ({ title: c.name, href: categoryHref(c.slug) })),
+    { title: "Доставка", href: "/#delivery" },
+  ]
+}
+
+/** Footer shop links: everything not already in the header, plus favourites */
+export function buildFooterShopNav(categories: { slug: string; name: string; inNavigation?: boolean }[]): NavItem[] {
+  return [
+    { title: "Увесь каталог", href: "/bouquets" },
+    ...categories.filter((c) => !c.inNavigation).map((c) => ({ title: c.name, href: categoryHref(c.slug) })),
+    { title: "Обране", href: "/favorites" },
+  ]
+}
+
+export const footerCustomerNav: NavItem[] = [
+  { title: "Доставка й оплата", href: "/#delivery" },
+  { title: "Нові надходження", href: "/bouquets?sort=new" },
 ]

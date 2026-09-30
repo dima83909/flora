@@ -2,27 +2,28 @@
 
 import { usePathname, useSearchParams } from "next/navigation"
 
-import { mainNav } from "@/config/site"
-import { getProductBySlug } from "@/data/catalog"
+import { useCatalog } from "@/components/catalog/catalog-provider"
+import { categoryHref, type NavItem } from "@/config/site"
 
 /**
  * Resolves which main navigation item matches the current URL.
  * Category pages and product pages highlight their category when it is in the menu,
  * otherwise the catalogue item. Uses search params, so render inside <Suspense>.
  */
-export function useActiveNavHref(): string | null {
+export function useActiveNavHref(items: NavItem[]): string | null {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { getProduct } = useCatalog()
 
-  const categoryHref = (category: string | null | undefined) =>
-    mainNav.find((item) => item.href === `/bouquets?category=${category}`)?.href
+  const inMenu = (category: string | null | undefined) =>
+    category ? items.find((item) => item.href === categoryHref(category))?.href : undefined
 
   if (pathname === "/bouquets") {
-    return categoryHref(searchParams.get("category")) ?? "/bouquets"
+    return inMenu(searchParams.get("category")) ?? "/bouquets"
   }
   if (pathname.startsWith("/bouquets/")) {
-    const product = getProductBySlug(pathname.split("/")[2] ?? "")
-    return categoryHref(product?.category) ?? "/bouquets"
+    const product = getProduct(decodeURIComponent(pathname.split("/")[2] ?? ""))
+    return inMenu(product?.category) ?? "/bouquets"
   }
   return null
 }
