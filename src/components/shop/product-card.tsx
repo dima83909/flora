@@ -51,7 +51,7 @@ export function ProductCard({ product, headingLevel: Heading = "h3" }: ProductCa
         {product.composition}
       </p>
 
-      <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+      <div className="mt-auto flex items-center justify-between gap-2 pt-3">
         <div className="min-w-0">
           <Price price={product.price} oldPrice={product.oldPrice} />
           {showAvailability ? (

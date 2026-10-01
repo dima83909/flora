@@ -16,7 +16,10 @@ type AddToCartButtonProps = {
   className?: string
 }
 
-/** Adds to the client-side cart and confirms the action in place for a moment */
+/**
+ * Adds to the client-side cart and confirms the action in place for a moment.
+ * While the confirmation is shown, the same control opens the cart instead of adding again.
+ */
 export function AddToCartButton({ product, quantity = 1, variant = "full", className }: AddToCartButtonProps) {
   const [added, setAdded] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -25,6 +28,10 @@ export function AddToCartButton({ product, quantity = 1, variant = "full", class
   useEffect(() => () => clearTimeout(timer.current), [])
 
   function handleClick() {
+    if (added) {
+      cartActions.setOpen(true)
+      return
+    }
     cartActions.add(product.slug, quantity)
     setAdded(true)
     clearTimeout(timer.current)
@@ -44,9 +51,15 @@ export function AddToCartButton({ product, quantity = 1, variant = "full", class
           type="button"
           onClick={handleClick}
           disabled={!available}
-          aria-label={available ? `Додати «${product.name}» до кошика` : `«${product.name}» немає в наявності`}
+          aria-label={
+            !available
+              ? `«${product.name}» немає в наявності`
+              : added
+                ? "Додано до кошика. Відкрити кошик"
+                : `Додати «${product.name}» до кошика`
+          }
           className={cn(
-            "flex size-10 shrink-0 items-center justify-center rounded-full border border-input text-ink transition-colors hover:border-moss hover:bg-moss hover:text-paper disabled:pointer-events-none disabled:opacity-35",
+            "flex size-10 shrink-0 items-center justify-center rounded-full border border-input text-ink transition-colors hover:border-moss hover:bg-moss hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stem disabled:pointer-events-none disabled:opacity-35",
             added && "border-moss bg-moss text-paper",
             className
           )}
@@ -63,6 +76,7 @@ export function AddToCartButton({ product, quantity = 1, variant = "full", class
       <Button size="lg" onClick={handleClick} disabled={!available} className={cn("w-full", className)}>
         {added ? <CheckIcon data-icon="inline-start" /> : <ShoppingBagIcon data-icon="inline-start" />}
         {!available ? "Немає в наявності" : added ? "Додано до кошика" : "Додати в кошик"}
+        {added ? <span className="sr-only">. Відкрити кошик</span> : null}
       </Button>
       {status}
     </>
