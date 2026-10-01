@@ -136,6 +136,13 @@ ADMIN_LOGIN=manager ADMIN_NAME="Ім'я менеджера" ADMIN_PASSWORD='не
 `npm run db:check` також перевіряє хешування паролів, усі 25 пар переходів статусів, нотатки,
 пошук і ліміт спроб входу.
 
+## Юридичні сторінки та бренд
+
+- `/privacy` і `/offer` беруть реквізити продавця з `src/config/legal.ts`. Поки поле не заповнене, на сторінці
+  стоїть видима позначка «потрібно вказати», а сторінка закрита від індексації.
+- Іконки й зображення для соцмереж лежать у `src/app` (`icon.svg`, `favicon.ico`, `apple-icon.png`,
+  `opengraph-image.png`); `node scripts/brand/generate.mjs` перемальовує їх із SVG-джерел (потрібна macOS).
+
 ## Deploy на Vercel
 
 Змінні середовища проєкту у Vercel (Production; для Preview — окрема база або ті самі значення):
@@ -179,6 +186,7 @@ DATABASE_URL='<direct production url>' ADMIN_LOGIN=<login> ADMIN_NAME='<name>' A
 - `/checkout` — оформлення замовлення (noindex)
 - `/order-success/[number]` — підтвердження замовлення (noindex)
 - `/admin/login`, `/admin/orders`, `/admin/orders/[number]` — адмін-панель (noindex, закрита в robots.txt)
+- `/privacy`, `/offer` — політика конфіденційності та публічна оферта
 - `/sitemap.xml`, `/robots.txt`
 
 ## Структура

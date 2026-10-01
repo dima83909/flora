@@ -10,8 +10,9 @@ import { SectionHeading } from "@/components/shared/section-heading"
 import { Price } from "@/components/shop/price"
 import { ProductBadges } from "@/components/shop/product-badges"
 import { ProductCard } from "@/components/shop/product-card"
-import { categoryHref, isGiftCategory, siteConfig } from "@/config/site"
+import { categoryHref, isGiftCategory } from "@/config/site"
 import { availabilityText } from "@/lib/catalog"
+import { pageOpenGraph } from "@/lib/metadata"
 import { canonicalPath, jsonLdScript, productImageUrls, productJsonLd } from "@/lib/structured-data"
 import { cn, formatPrice } from "@/lib/utils"
 import { getCategoryBySlug, getProductBySlug, getProductSlugs, getRelatedProducts } from "@/server/catalog"
@@ -38,15 +39,13 @@ export async function generateMetadata({ params }: PageProps<"/bouquets/[slug]">
     title,
     description,
     alternates: { canonical: url },
-    openGraph: {
-      type: "website",
+    // The product photograph when its absolute URL is known, otherwise the shared brand image
+    openGraph: pageOpenGraph({
       url,
       title: product.name,
       description: product.description,
-      locale: siteConfig.locale,
-      siteName: siteConfig.name,
       ...(images.length ? { images: images.map((src) => ({ url: src, alt: product.name })) } : {}),
-    },
+    }),
   }
 }
 

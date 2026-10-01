@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#fbf8f3"/>
+  <!-- arch with the brand sprig, as on the storefront -->
+  <path d="M760 630V300a170 170 0 0 1 340 0v330z" fill="#f6e7e2"/>
+  <g transform="translate(846 150) scale(7)">
+    <path d="M12 60V10" stroke="#2e3b2b" stroke-width="1.300" stroke-linecap="round" fill="none"/>
+    <path d="M12 44q-13-3-15-17q12 2 15 17z" fill="#5f6f57"/>
+    <path d="M12 31q11-2 14-14q-11 2-14 14z" fill="#5f6f57" opacity=".75"/>
+    <ellipse cx="12" cy="9" rx="5.600" ry="7.400" fill="#ebcfc9"/>
+  </g>
+  <text x="100" y="330" font-family="Iowan Old Style, Charter, Georgia, serif" font-size="168" letter-spacing="-4" fill="#1e231f">flora</text>
+  <text x="106" y="408" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="40" fill="#4a5048">квіткова майстерня</text>
+  <rect x="106" y="452" width="72" height="3" fill="#a5605b"/>
+</svg>

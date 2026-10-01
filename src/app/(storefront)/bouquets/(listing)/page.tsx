@@ -4,6 +4,7 @@ import { connection } from "next/server"
 import { CatalogView } from "@/components/catalog/catalog-view"
 import { categoryHref } from "@/config/site"
 import { catalogTitle, isRefinedListing, parseFilters } from "@/lib/catalog"
+import { pageOpenGraph } from "@/lib/metadata"
 import { canonicalPath } from "@/lib/structured-data"
 import { getCategories, getProducts } from "@/server/catalog"
 
@@ -32,7 +33,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/bouquets">)
     title,
     description,
     alternates: { canonical },
-    openGraph: { title, description, url: canonical },
+    openGraph: pageOpenGraph({ title, description, url: canonical }),
     // Search, sorting and price filters are variations of the canonical listing
     robots: isRefinedListing(filters) ? { index: false, follow: true } : undefined,
   }

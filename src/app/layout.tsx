@@ -33,7 +33,8 @@ export const metadata: Metadata = {
     title: siteConfig.title,
     description: siteConfig.description,
   },
-  twitter: { card: "summary" },
+  // The shared social image comes from app/opengraph-image.png; product pages add their photo
+  twitter: { card: "summary_large_image" },
 }
 
 // Prerendered storefront pages (and the 404 page) refresh catalogue data from the database
