@@ -39,8 +39,13 @@ export type SignInResult =
   | { ok: false; reason: "invalid" }
   | { ok: false; reason: "throttled"; retryAfterMinutes: number }
 
+/**
+ * Client address for the sign-in limits. Forwarding headers are client-controlled unless a
+ * reverse proxy overwrites them, so they are used only when TRUST_PROXY=1 (see README).
+ * Otherwise the address is unknown (null) and the limits count per login only.
+ */
 async function clientIp() {
-  // Trustworthy only behind a proxy that overwrites the header (see README)
+  if (process.env.TRUST_PROXY !== "1") return null
   const list = await headers()
   return list.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 64) || list.get("x-real-ip")?.slice(0, 64) || null
 }
@@ -65,7 +70,7 @@ export async function signIn(input: unknown): Promise<SignInResult> {
     return { ok: false, reason: "invalid" }
   }
 
-  await clearLoginFailures(login)
+  await clearLoginFailures(login, ip)
   await getDb().adminUser.update({ where: { id: admin.id }, data: { lastLoginAt: new Date() } })
   await createSession(admin.id)
   return { ok: true }

@@ -144,8 +144,25 @@ async function main() {
   const blocked = await checkLoginAllowed(login, null)
   check(!blocked.allowed && blocked.retryAfterMinutes > 0 && blocked.retryAfterMinutes <= 15, "5 failures do not throttle")
   check((await checkLoginAllowed(`${login}-other`, null)).allowed, "throttle leaks to another login")
-  await clearLoginFailures(login)
+  await clearLoginFailures(login, null)
   check((await checkLoginAllowed(login, null)).allowed, "throttle not cleared")
+
+  // A stranger's failures from one address lock only that address, not the manager elsewhere
+  const manager = `${login}-manager`
+  for (let attempt = 0; attempt < 5; attempt++) await recordLoginFailure(manager, "203.0.113.7")
+  check(!(await checkLoginAllowed(manager, "203.0.113.7")).allowed, "5 failures from one address do not throttle it")
+  check((await checkLoginAllowed(manager, "198.51.100.2")).allowed, "one address locked the login for everyone")
+  check((await checkLoginAllowed(`${manager}-2`, "203.0.113.7")).allowed, "pair limit leaked to another login")
+
+  // Distributed guessing of one login is still capped, by the higher per-login limit
+  for (let attempt = 0; attempt < 25; attempt++) await recordLoginFailure(manager, `192.0.2.${attempt + 1}`)
+  check(!(await checkLoginAllowed(manager, "198.51.100.2")).allowed, "30 failures from many addresses do not throttle the login")
+
+  // Success forgives that address only
+  await clearLoginFailures(manager, "203.0.113.7")
+  check((await checkLoginAllowed(manager, "203.0.113.7")).allowed, "clearing an address did not lift its own limit")
+  check((await db.adminLoginAttempt.count({ where: { login: manager } })) === 25, "clearing one address removed other addresses' failures")
+  await db.adminLoginAttempt.deleteMany({ where: { login: { startsWith: login } } })
 }
 
 main()
