@@ -11,6 +11,7 @@ import { ORDER_STATUSES, ORDER_STATUS_TRANSITIONS, type OrderStatusValue } from 
 import { checkLoginAllowed, clearLoginFailures, recordLoginFailure } from "@/server/admin/login-throttle"
 import { hashPassword, verifyPassword } from "@/server/admin/password"
 import { getDb } from "@/server/db"
+import { cleanupExpired, purgeOrders } from "@/server/maintenance"
 import { createGuestOrder } from "@/server/orders/create-order"
 import {
   deleteOrder,
@@ -164,6 +165,82 @@ async function main() {
   check((await checkLoginAllowed(manager, "203.0.113.7")).allowed, "clearing an address did not lift its own limit")
   check((await db.adminLoginAttempt.count({ where: { login: manager } })) === 25, "clearing one address removed other addresses' failures")
   await db.adminLoginAttempt.deleteMany({ where: { login: { startsWith: login } } })
+
+  // 8. Housekeeping: expired sessions and stale rate-limit records go, current ones stay
+  const day = 24 * 60 * 60 * 1000
+  const tag = `purge-check-${Date.now()}`
+  const tester = await db.adminUser.create({ data: { login: tag, name: tag, passwordHash: "x" } })
+  try {
+    await db.adminSession.createMany({
+      data: [
+        { tokenHash: `${tag}-expired`, adminId: tester.id, expiresAt: new Date(Date.now() - 1000) },
+        { tokenHash: `${tag}-valid`, adminId: tester.id, expiresAt: new Date(Date.now() + day) },
+      ],
+    })
+    await db.adminLoginAttempt.createMany({
+      data: [
+        { login: tag, ip: null, createdAt: new Date(Date.now() - 2 * day) },
+        { login: tag, ip: null },
+      ],
+    })
+    await db.orderAttempt.createMany({
+      data: [
+        { phone: "+380509991111", ip: tag, createdAt: new Date(Date.now() - 2 * day) },
+        { phone: "+380509991111", ip: tag },
+      ],
+    })
+    const cleaned = await cleanupExpired()
+    check(cleaned.sessions >= 1 && cleaned.loginAttempts >= 1 && cleaned.orderAttempts >= 1, "cleanup removed nothing")
+    check((await db.adminSession.count({ where: { adminId: tester.id } })) === 1, "cleanup must keep only the valid session")
+    check((await db.adminLoginAttempt.count({ where: { login: tag } })) === 1, "cleanup must keep recent sign-in failures")
+    check((await db.orderAttempt.count({ where: { ip: tag } })) === 1, "cleanup must keep recent order records")
+
+    // 9. Retention: only old finished orders are purged, and a dry run deletes nothing
+    const old = new Date(Date.now() - 800 * day)
+    const mk = (status: OrderStatusValue, createdAt: Date, name: string) =>
+      db.order.create({
+        data: {
+          status,
+          createdAt,
+          customerName: `${tag}-${name}`,
+          customerPhone: "+380509991112",
+          customerCity: "Київ",
+          subtotalMinor: 0,
+          items: { create: [] },
+        },
+        select: { id: true },
+      })
+    const [oldDone, oldCancelled, oldNew, oldConfirmed, freshDone] = await Promise.all([
+      mk("COMPLETED", old, "old-done"),
+      mk("CANCELLED", old, "old-cancelled"),
+      mk("NEW", old, "old-new"),
+      mk("CONFIRMED", old, "old-confirmed"),
+      mk("COMPLETED", new Date(), "fresh-done"),
+    ])
+    const exists = async (id: string) => (await db.order.count({ where: { id } })) === 1
+
+    const dry = await purgeOrders({ olderThanMonths: 24, dryRun: true })
+    check(dry.dryRun && dry.count >= 2, `dry run should report the two old finished orders, got ${dry.count}`)
+    check((await exists(oldDone.id)) && (await exists(oldCancelled.id)), "a dry run deleted orders")
+
+    const purged = await purgeOrders({ olderThanMonths: 24, dryRun: false })
+    check(purged.count >= 2, "purge deleted nothing")
+    check(!(await exists(oldDone.id)) && !(await exists(oldCancelled.id)), "old finished orders were not purged")
+    check((await exists(oldNew.id)) && (await exists(oldConfirmed.id)), "purge deleted an order still in progress")
+    check(await exists(freshDone.id), "purge deleted a recent order")
+
+    for (const months of [0, -1, 1.5, Number.NaN]) {
+      await purgeOrders({ olderThanMonths: months, dryRun: true }).then(
+        () => check(false, `purgeOrders accepted ${months} months`),
+        () => undefined
+      )
+    }
+  } finally {
+    await db.order.deleteMany({ where: { customerName: { startsWith: tag } } })
+    await db.orderAttempt.deleteMany({ where: { ip: tag } })
+    await db.adminLoginAttempt.deleteMany({ where: { login: tag } })
+    await db.adminUser.delete({ where: { id: tester.id } })
+  }
 }
 
 main()
@@ -176,6 +253,6 @@ main()
       console.error(`✗ Admin check failed:\n${failures.map((f) => `  - ${f}`).join("\n")}`)
       process.exitCode = 1
     } else {
-      console.log("✓ Admin: password hashing, 25 status transitions, notes, search, live fingerprints, deletion and sign-in throttling behave correctly")
+      console.log("✓ Admin: password hashing, 25 status transitions, notes, search, live fingerprints, deletion, sign-in throttling, cleanup and order retention behave correctly")
     }
   })
