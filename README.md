@@ -144,7 +144,7 @@ ADMIN_LOGIN=manager ADMIN_NAME="Ім'я менеджера" ADMIN_PASSWORD='не
 |---|---|---|
 | `DATABASE_URL` | так | рядок підключення до PostgreSQL для застосунку. Для serverless бажано pooled-адресу провайдера, з `sslmode=require` |
 | `NEXT_PUBLIC_SITE_URL` | ні | публічна адреса сайту без слеша в кінці. Без неї немає canonical, `og:url`, `og:image`, URL у JSON-LD і записів у sitemap. Вбудовується під час збірки: після зміни потрібен redeploy |
-| `DIRECT_URL` | лише локально | пряме підключення для міграцій і seed, якщо `DATABASE_URL` іде через pooler. У Vercel не потрібна: міграції там не запускаються |
+| `DIRECT_URL` | ні, лише локально | необов'язкове пряме підключення для Prisma CLI (міграції), якщо `DATABASE_URL` іде через pooler. Seed і `admin:create` її не читають: вони, як і сам застосунок, використовують `DATABASE_URL`. У Vercel не потрібна: міграції там не запускаються |
 
 Особливості:
 
@@ -159,7 +159,8 @@ ADMIN_LOGIN=manager ADMIN_NAME="Ім'я менеджера" ADMIN_PASSWORD='не
 Перший deploy:
 
 ```bash
-# 1. схема й каталог у production-базі (пряме підключення)
+# 1. схема й каталог у production-базі. Усі три команди читають DATABASE_URL;
+#    для міграцій підставте пряме (не pooled) підключення
 DATABASE_URL='<direct production url>' npm run db:deploy
 DATABASE_URL='<direct production url>' npm run db:seed
 
