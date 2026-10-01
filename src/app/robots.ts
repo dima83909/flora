@@ -4,7 +4,7 @@ import { absoluteUrl } from "@/lib/structured-data"
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/" },
+    rules: { userAgent: "*", allow: "/", disallow: "/admin" },
     // Listed only once the real domain is configured
     ...(absoluteUrl("/sitemap.xml") ? { sitemap: absoluteUrl("/sitemap.xml") } : {}),
   }

@@ -1,11 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Commissioner, Literata } from "next/font/google"
 
-import { CatalogProvider } from "@/components/catalog/catalog-provider"
-import { SiteFooter } from "@/components/layout/site-footer"
-import { SiteHeader } from "@/components/layout/site-header"
 import { siteConfig } from "@/config/site"
-import { getStorefrontCatalog } from "@/server/catalog"
 
 import "./globals.css"
 
@@ -40,33 +36,19 @@ export const metadata: Metadata = {
   twitter: { card: "summary" },
 }
 
-// Prerendered pages refresh catalogue data from the database at most every 5 minutes
+// Prerendered storefront pages (and the 404 page) refresh catalogue data from the database
+// at most every 5 minutes. Admin pages read the session cookie, so they are never prerendered.
 export const revalidate = 300
 
 export const viewport: Viewport = {
   themeColor: "#fbf8f3",
 }
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const { products, categories } = await getStorefrontCatalog()
-
+// Fonts and document shell only: the storefront and the admin panel bring their own chrome
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="uk" className={`${literata.variable} ${commissioner.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
-        <a
-          href="#main"
-          className="sr-only z-50 rounded-full bg-moss px-4 py-2 text-paper focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-        >
-          Перейти до змісту
-        </a>
-        <CatalogProvider products={products} categories={categories}>
-          <SiteHeader />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <SiteFooter />
-        </CatalogProvider>
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   )
 }

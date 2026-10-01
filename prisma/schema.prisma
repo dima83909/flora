@@ -194,3 +194,53 @@ model OrderItem {
   @@index([productId])
   @@map("order_items")
 }
+
+// ─── Admin ───────────────────────────────────────────────────────────────────
+// Staff-only accounts for the order panel. Customers never get accounts.
+
+/// A manager who can sign in to /admin. Created with `npm run admin:create`.
+model AdminUser {
+  id           String  @id @default(cuid())
+  /// Lower-cased sign-in name
+  login        String  @unique
+  name         String
+  /// scrypt hash with its parameters and salt; never the password itself
+  passwordHash String  @map("password_hash")
+  isActive     Boolean @default(true) @map("is_active")
+
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  sessions AdminSession[]
+
+  @@map("admin_users")
+}
+
+/// Server-side session. The browser holds a random token; only its SHA-256 is stored,
+/// so a database leak does not yield usable cookies.
+model AdminSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique @map("token_hash")
+  adminId   String   @map("admin_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  admin AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+  @@map("admin_sessions")
+}
+
+/// Failed sign-in attempts, counted per login and per IP to slow down brute force
+model AdminLoginAttempt {
+  id        String   @id @default(cuid())
+  login     String
+  ip        String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([login, createdAt])
+  @@index([ip, createdAt])
+  @@map("admin_login_attempts")
+}

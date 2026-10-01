@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { SendIcon } from "lucide-react"
 
-import { placeOrder } from "@/app/checkout/actions"
+import { placeOrder } from "@/app/(storefront)/checkout/actions"
 import { GiftArt } from "@/components/brand/gift-art"
 import { useCatalog } from "@/components/catalog/catalog-provider"
 import { ProductImage } from "@/components/shop/product-image"
