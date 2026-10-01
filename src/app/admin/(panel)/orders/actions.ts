@@ -1,10 +1,16 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 
 import { isOrderStatus, MANAGER_NOTE_MAX, ORDER_STATUS_LABELS } from "@/lib/order-status"
 import { requireAdmin } from "@/server/admin/auth"
-import { changeAdminOrderStatus, saveAdminManagerNote } from "@/server/admin/orders"
+import {
+  changeAdminOrderStatus,
+  deleteAdminOrder,
+  getAdminOrdersVersion,
+  saveAdminManagerNote,
+} from "@/server/admin/orders"
 
 /*
  * Server actions are public HTTP endpoints: anyone can POST to them with any
@@ -78,4 +84,41 @@ export async function saveManagerNote(_previous: ActionState, formData: unknown)
 
   refresh(number)
   return { ok: true, message: note ? "Нотатку збережено." : "Нотатку очищено." }
+}
+
+/** Permanently deletes an order and returns to the list */
+export async function deleteOrder(_previous: ActionState, formData: unknown): Promise<ActionState> {
+  await requireAdmin()
+  if (!(formData instanceof FormData)) return BAD_REQUEST
+
+  const number = parseNumber(formData.get("number"))
+  const status = formData.get("status")
+  if (number === null || !isOrderStatus(status)) return BAD_REQUEST
+
+  const result = await deleteAdminOrder(number, status)
+  if (!result.ok) {
+    if (result.reason === "not_found") {
+      revalidatePath("/admin/orders")
+      return { ok: false, message: "Замовлення вже видалено." }
+    }
+    refresh(number)
+    return {
+      ok: false,
+      message: `Статус замовлення змінили${result.current ? ` на «${ORDER_STATUS_LABELS[result.current]}»` : ""}. Перевірте його й видаліть ще раз, якщо потрібно.`,
+    }
+  }
+
+  revalidatePath("/admin/orders")
+  redirect("/admin/orders")
+}
+
+/**
+ * Live updates: returns a fingerprint of the order list (or of one order). The page polls
+ * it and re-renders only when it changes. It carries no order data.
+ */
+export async function getOrdersVersion(number?: unknown): Promise<string> {
+  await requireAdmin()
+  if (number === undefined || number === null) return getAdminOrdersVersion()
+  if (typeof number !== "number" || !Number.isSafeInteger(number) || number < 1 || number > 999_999_999) return "invalid"
+  return getAdminOrdersVersion(number)
 }

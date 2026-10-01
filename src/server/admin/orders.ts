@@ -4,7 +4,10 @@ import type { OrderStatusValue } from "@/lib/order-status"
 import { requireAdmin } from "@/server/admin/auth"
 import {
   countOrdersByStatus,
+  deleteOrder,
   getOrderByNumber,
+  getOrdersVersion,
+  getOrderVersion,
   searchOrders,
   setManagerNote,
   transitionOrderStatus,
@@ -45,4 +48,15 @@ export async function changeAdminOrderStatus(number: number, from: OrderStatusVa
 export async function saveAdminManagerNote(number: number, note: string | null) {
   await requireAdmin()
   return setManagerNote(number, note)
+}
+
+export async function deleteAdminOrder(number: number, expectedStatus: OrderStatusValue) {
+  await requireAdmin()
+  return deleteOrder(number, expectedStatus)
+}
+
+/** Fingerprint of the order list, or of one order, for live updates */
+export async function getAdminOrdersVersion(number?: number) {
+  await requireAdmin()
+  return number === undefined ? getOrdersVersion() : getOrderVersion(number)
 }

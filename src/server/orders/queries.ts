@@ -105,3 +105,36 @@ export async function setManagerNote(number: number, note: string | null) {
   const { count } = await getDb().order.updateMany({ where: { number }, data: { managerNote: note } })
   return count === 1
 }
+
+export type DeleteOrderResult = { ok: true } | { ok: false; reason: "not_found" | "stale"; current?: OrderStatusValue }
+
+/**
+ * Permanently deletes an order; its items go with it (ON DELETE CASCADE). Like a status
+ * change, it only applies while the order is still in the status the manager was looking at.
+ */
+export async function deleteOrder(number: number, expectedStatus: OrderStatusValue): Promise<DeleteOrderResult> {
+  const db = getDb()
+  const { count } = await db.order.deleteMany({ where: { number, status: expectedStatus } })
+  if (count === 1) return { ok: true }
+
+  const order = await db.order.findUnique({ where: { number }, select: { status: true } })
+  if (!order) return { ok: false, reason: "not_found" }
+  return { ok: false, reason: "stale", current: order.status }
+}
+
+/*
+ * Cheap fingerprints for live updates in the admin panel: the browser polls them and
+ * re-renders the page only when one changes.
+ */
+
+/** Changes when any order is created, changed or deleted */
+export async function getOrdersVersion() {
+  const { _count, _max } = await getDb().order.aggregate({ _count: true, _max: { updatedAt: true, number: true } })
+  return `${_count}:${_max.number ?? 0}:${_max.updatedAt?.getTime() ?? 0}`
+}
+
+/** Changes when this order is changed or deleted */
+export async function getOrderVersion(number: number) {
+  const order = await getDb().order.findUnique({ where: { number }, select: { updatedAt: true, status: true } })
+  return order ? `${order.status}:${order.updatedAt.getTime()}` : "deleted"
+}

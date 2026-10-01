@@ -10,6 +10,14 @@ export function ManagerNoteForm({ number, note }: { number: number; note: string
   const [state, action, pending] = useActionState(saveManagerNote, null)
   const [value, setValue] = useState(note)
 
+  // Live updates: when the saved note changes elsewhere, show it, unless the manager is
+  // in the middle of editing, whose unsaved text must not be overwritten
+  const [savedNote, setSavedNote] = useState(note)
+  if (note !== savedNote) {
+    if (value.trim() === savedNote) setValue(note)
+    setSavedNote(note)
+  }
+
   return (
     <form action={action}>
       <input type="hidden" name="number" value={number} />

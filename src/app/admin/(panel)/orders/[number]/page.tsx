@@ -4,6 +4,8 @@ import { notFound } from "next/navigation"
 import { ArrowLeftIcon } from "lucide-react"
 
 import { CopyButton } from "@/components/admin/copy-button"
+import { DeleteOrder } from "@/components/admin/delete-order"
+import { LiveRefresh } from "@/components/admin/live-refresh"
 import { ManagerNoteForm } from "@/components/admin/manager-note-form"
 import { StatusActions } from "@/components/admin/status-actions"
 import { StatusBadge } from "@/components/admin/status-badge"
@@ -46,6 +48,7 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/order
 
   return (
     <>
+      <LiveRefresh version={`${order.status}:${order.updatedAt.getTime()}`} orderNumber={order.number} />
       <Link href="/admin/orders" className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink">
         <ArrowLeftIcon aria-hidden className="size-4" />
         Усі замовлення
@@ -143,6 +146,14 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/order
               </Field>
               <Field label="Валюта">{order.currency}</Field>
             </dl>
+          </Card>
+
+          <Card title="Видалення">
+            <p className="-mt-2 mb-3 text-sm text-ink-soft">
+              Повністю прибирає замовлення з бази. Щоб лише закрити його, скасуйте замовлення в блоці «Статус».
+            </p>
+            {/* Remounted on every status change so an open confirmation never carries over */}
+            <DeleteOrder key={order.status} number={order.number} status={order.status} />
           </Card>
         </div>
       </div>

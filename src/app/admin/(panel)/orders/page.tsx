@@ -4,6 +4,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { SearchIcon } from "lucide-react"
 
+import { LiveRefresh } from "@/components/admin/live-refresh"
 import { StatusBadge } from "@/components/admin/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +12,7 @@ import { formatMoney, formatPhone, formatShortDate, plural } from "@/lib/admin-f
 import { isOrderStatus, ORDER_STATUSES, ORDER_STATUS_LABELS, type OrderStatusValue } from "@/lib/order-status"
 import { cn } from "@/lib/utils"
 import { requireAdmin } from "@/server/admin/auth"
-import { listAdminOrders } from "@/server/admin/orders"
+import { getAdminOrdersVersion, listAdminOrders } from "@/server/admin/orders"
 
 export const metadata: Metadata = { title: "Замовлення" }
 
@@ -43,6 +44,8 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
     page: /^[1-9]\d{0,5}$/.test(rawPage) ? Number(rawPage) : 1,
   }
 
+  // The fingerprint is read first: a change that lands between the two queries triggers one extra refresh, never a missed one
+  const version = await getAdminOrdersVersion()
   const { orders, total, counts, pageCount } = await listAdminOrders(filters)
   // A page past the end (orders were filtered out, or the link is old) shows the last one
   if (filters.page > pageCount) redirect(ordersHref({ ...filters, page: pageCount }))
@@ -57,6 +60,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
 
   return (
     <>
+      <LiveRefresh version={version} />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="font-sans text-2xl font-medium text-ink">Замовлення</h1>
         <Form action="/admin/orders" role="search" className="flex w-full gap-2 sm:max-w-md">

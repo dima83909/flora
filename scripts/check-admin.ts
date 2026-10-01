@@ -12,7 +12,15 @@ import { checkLoginAllowed, clearLoginFailures, recordLoginFailure } from "@/ser
 import { hashPassword, verifyPassword } from "@/server/admin/password"
 import { getDb } from "@/server/db"
 import { createGuestOrder } from "@/server/orders/create-order"
-import { getOrderByNumber, searchOrders, setManagerNote, transitionOrderStatus } from "@/server/orders/queries"
+import {
+  deleteOrder,
+  getOrderByNumber,
+  getOrdersVersion,
+  getOrderVersion,
+  searchOrders,
+  setManagerNote,
+  transitionOrderStatus,
+} from "@/server/orders/queries"
 
 const db = getDb()
 const failures: string[] = []
@@ -96,7 +104,40 @@ async function main() {
   check(page.orders.length === 1 && page.total >= 2, "pagination")
   check(page.orders[0].number === other, "newest order is not first")
 
-  // 5. Sign-in throttling
+  // 5. Live-update fingerprints change on create, change and delete, and only then
+  const listBefore = await getOrdersVersion()
+  check(listBefore === (await getOrdersVersion()), "list fingerprint changed without any change")
+  const doomed = await placeOrder("Видалити Мене", "050 000 11 22", "Полтава")
+  const listAfterCreate = await getOrdersVersion()
+  check(listAfterCreate !== listBefore, "list fingerprint did not change after a new order")
+  const orderBefore = await getOrderVersion(doomed)
+  await new Promise((resolve) => setTimeout(resolve, 5))
+  await transitionOrderStatus(doomed, "NEW", "CONTACTED")
+  const listAfterStatus = await getOrdersVersion()
+  check(listAfterStatus !== listAfterCreate, "list fingerprint did not change after a status change")
+  check((await getOrderVersion(doomed)) !== orderBefore, "order fingerprint did not change after a status change")
+  await new Promise((resolve) => setTimeout(resolve, 5))
+  await setManagerNote(doomed, "нотатка")
+  check((await getOrdersVersion()) !== listAfterStatus, "list fingerprint did not change after a note")
+
+  // 6. Permanent deletion: only from the status the manager saw, items go with the order
+  const doomedRow = await db.order.findUniqueOrThrow({ where: { number: doomed }, include: { items: true } })
+  check(doomedRow.items.length > 0, "test order has no items")
+  const staleDelete = await deleteOrder(doomed, "NEW")
+  check(!staleDelete.ok && staleDelete.reason === "stale" && staleDelete.current === "CONTACTED", `stale delete: ${JSON.stringify(staleDelete)}`)
+  check((await getOrderByNumber(doomed)) !== null, "a stale delete removed the order")
+  const listBeforeDelete = await getOrdersVersion()
+  check((await deleteOrder(doomed, "CONTACTED")).ok, "order was not deleted")
+  check((await getOrderByNumber(doomed)) === null, "order still exists after deletion")
+  check((await db.orderItem.count({ where: { orderId: doomedRow.id } })) === 0, "order items were not deleted with the order")
+  check((await db.product.count({ where: { id: doomedRow.items[0].productId! } })) === 1, "deleting an order removed a product")
+  check((await getOrdersVersion()) !== listBeforeDelete, "list fingerprint did not change after a deletion")
+  check((await getOrderVersion(doomed)) === "deleted", "deleted order still has a fingerprint")
+  const again = await deleteOrder(doomed, "CONTACTED")
+  check(!again.ok && again.reason === "not_found", "deleting a missing order did not report not_found")
+  check((await getOrderByNumber(number)) !== null && (await getOrderByNumber(other)) !== null, "deletion touched other orders")
+
+  // 7. Sign-in throttling
   const login = `check-${Date.now()}`
   check((await checkLoginAllowed(login, null)).allowed, "fresh login is throttled")
   for (let attempt = 0; attempt < 5; attempt++) await recordLoginFailure(login, null)
@@ -116,6 +157,6 @@ main()
       console.error(`✗ Admin check failed:\n${failures.map((f) => `  - ${f}`).join("\n")}`)
       process.exitCode = 1
     } else {
-      console.log("✓ Admin: password hashing, 25 status transitions, notes, search and sign-in throttling behave correctly")
+      console.log("✓ Admin: password hashing, 25 status transitions, notes, search, live fingerprints, deletion and sign-in throttling behave correctly")
     }
   })
