@@ -136,6 +136,39 @@ ADMIN_LOGIN=manager ADMIN_NAME="Ім'я менеджера" ADMIN_PASSWORD='не
 `npm run db:check` також перевіряє хешування паролів, усі 25 пар переходів статусів, нотатки,
 пошук і ліміт спроб входу.
 
+## Deploy на Vercel
+
+Змінні середовища проєкту у Vercel (Production; для Preview — окрема база або ті самі значення):
+
+| Змінна | Обов'язкова | Значення |
+|---|---|---|
+| `DATABASE_URL` | так | рядок підключення до PostgreSQL для застосунку. Для serverless бажано pooled-адресу провайдера, з `sslmode=require` |
+| `NEXT_PUBLIC_SITE_URL` | ні | публічна адреса сайту без слеша в кінці. Без неї немає canonical, `og:url`, `og:image`, URL у JSON-LD і записів у sitemap. Вбудовується під час збірки: після зміни потрібен redeploy |
+| `DIRECT_URL` | лише локально | пряме підключення для міграцій і seed, якщо `DATABASE_URL` іде через pooler. У Vercel не потрібна: міграції там не запускаються |
+
+Особливості:
+
+- **База потрібна під час збірки.** Головна, сторінки товарів, checkout, обране й sitemap пререндеряться з каталогу,
+  тож `DATABASE_URL` має бути доступна на етапі Build, а база — вже з міграціями й каталогом.
+- **Міграції не запускаються автоматично.** Перед deploy, який змінює схему, виконайте `npm run db:deploy`
+  зі своєї машини з production-рядком підключення.
+- **Seed запускається з репозиторію**, бо підключає фото, які знайшов у `public/images/products`.
+- **`npm run db:check` не для production-бази:** він створює й видаляє тестові замовлення.
+- Prisma Client генерується в `postinstall`; для цього база не потрібна.
+
+Перший deploy:
+
+```bash
+# 1. схема й каталог у production-базі (пряме підключення)
+DATABASE_URL='<direct production url>' npm run db:deploy
+DATABASE_URL='<direct production url>' npm run db:seed
+
+# 2. адміністратор
+DATABASE_URL='<direct production url>' ADMIN_LOGIN=<login> ADMIN_NAME='<name>' ADMIN_PASSWORD='<12+ символів>' npm run admin:create
+```
+
+Після цього додайте змінні у Vercel і запустіть deploy (framework preset Next.js, команди збірки за замовчуванням).
+
 ## Маршрути
 
 - `/` — головна
