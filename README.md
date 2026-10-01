@@ -8,6 +8,7 @@
 npm run dev     # dev-сервер на http://localhost:3000
 npm run build   # production build
 npm run lint    # ESLint
+npm test        # unit-тести Vitest (чиста логіка, без бази)
 npx tsc --noEmit  # перевірка типів
 ```
 
