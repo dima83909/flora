@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 
-import { Benefits } from "@/components/home/benefits"
 import { Categories } from "@/components/home/categories"
 import { Delivery } from "@/components/home/delivery"
 import { FloristCta } from "@/components/home/florist-cta"
@@ -19,7 +18,6 @@ export default function HomePage() {
       <Hero />
       <PopularBouquets />
       <Categories />
-      <Benefits />
       <Delivery />
       <FloristCta />
     </>

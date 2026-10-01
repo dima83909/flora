@@ -14,8 +14,7 @@ export async function PopularBouquets() {
       <div className="container-page">
         <SectionHeading
           id="popular-title"
-          title="Найчастіше замовляють"
-          description="Букети, які флористи збирають щодня. Склад може трохи змінюватися залежно від поставки, палітра лишається тією ж."
+          title="Букети з каталогу"
           action={
             <Button asChild variant="outline" className="bg-transparent">
               <Link href="/bouquets">Усі букети</Link>

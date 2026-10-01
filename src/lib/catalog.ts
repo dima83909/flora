@@ -4,7 +4,7 @@ import type { Availability, Category, Product } from "@/types/catalog"
 export type CategoryRef = Pick<Category, "slug" | "name">
 
 export const sortOptions = [
-  { value: "popular", label: "Спочатку популярні", short: "Популярні" },
+  { value: "popular", label: "За замовчуванням", short: "Типово" },
   { value: "new", label: "Спочатку нові", short: "Нові" },
   { value: "price-asc", label: "Спочатку дешевші", short: "Дешевші" },
   { value: "price-desc", label: "Спочатку дорожчі", short: "Дорожчі" },
@@ -193,7 +193,8 @@ export function availabilityText(product: Pick<Product, "availability" | "leadDa
     case "low_stock":
       return "Залишилось кілька штук"
     case "preorder":
-      return `Під замовлення, ${product.leadDays ?? 2} ${pluralize(product.leadDays ?? 2, ["день", "дні", "днів"])}`
+      // The lead time is not shown until real supply terms are confirmed
+      return "Під замовлення"
     case "out_of_stock":
       return "Немає в наявності"
   }

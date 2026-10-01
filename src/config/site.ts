@@ -17,7 +17,7 @@ export const siteConfig = {
   name: "Flora",
   title: "Flora — квіткова майстерня",
   description:
-    "Авторські букети з сезонних квітів. Збираємо вручну, надсилаємо фото перед відправкою, доставляємо по всій Україні.",
+    "Букети й квіткові композиції з доставкою по всій Україні. Деталі доставки й оплати узгоджує менеджер у Telegram.",
   url: readSiteUrl(),
   locale: "uk_UA",
   /**
@@ -73,5 +73,4 @@ export function buildFooterShopNav(categories: { slug: string; name: string; inN
 
 export const footerCustomerNav: NavItem[] = [
   { title: "Доставка й оплата", href: "/#delivery" },
-  { title: "Нові надходження", href: "/bouquets?sort=new" },
 ]

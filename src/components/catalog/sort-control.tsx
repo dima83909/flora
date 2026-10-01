@@ -22,6 +22,9 @@ import {
 import { sortOptions, type SortValue } from "@/lib/catalog"
 import { cn } from "@/lib/utils"
 
+// "Спочатку нові" is not offered while product dates are demo data; ?sort=new links still work
+const shownOptions = sortOptions.filter((option) => option.value !== "new")
+
 type SortControlProps = {
   value: SortValue
   onChange: (value: SortValue) => void
@@ -36,7 +39,7 @@ export function SortSelect({ value, onChange }: SortControlProps) {
         <SelectValue>{current?.label}</SelectValue>
       </SelectTrigger>
       <SelectContent position="popper" align="end" className="bg-card">
-        {sortOptions.map((option) => (
+        {shownOptions.map((option) => (
           <SelectItem key={option.value} value={option.value} className="py-2.5 text-[0.9375rem]">
             {option.label}
           </SelectItem>
@@ -68,7 +71,7 @@ export function SortSheet({ value, onChange }: SortControlProps) {
           <SheetDescription className="sr-only">Оберіть порядок товарів</SheetDescription>
         </SheetHeader>
         <ul className="px-3">
-          {sortOptions.map((option) => {
+          {shownOptions.map((option) => {
             const active = option.value === value
             return (
               <li key={option.value}>

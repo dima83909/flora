@@ -18,15 +18,20 @@ type ProductCardProps = {
 export function ProductCard({ product, headingLevel: Heading = "h3" }: ProductCardProps) {
   const available = isPurchasable(product.availability)
   const showAvailability = product.availability !== "in_stock"
+  const photo = product.images?.[0]
 
   return (
     <article className="group relative flex w-full flex-col">
       <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-linen">
-        {/* Desktop hover zooms into the blooms; a CSS transform avoids rendering a second illustration */}
+        {/* Desktop hover zooms in with a CSS transform: gently on a photograph, into the blooms on an illustration */}
         <ProductImage
           visual={product.visual}
+          src={photo}
+          label={photo ? product.name : undefined}
+          sizes="(min-width: 1024px) 25vw, 50vw"
           className={cn(
-            "origin-[50%_38%] transition-transform duration-700 ease-petal [@media(hover:hover)]:group-hover:scale-[1.28]",
+            "origin-[50%_38%] transition-transform duration-700 ease-petal",
+            photo ? "[@media(hover:hover)]:group-hover:scale-[1.05]" : "[@media(hover:hover)]:group-hover:scale-[1.28]",
             !available && "opacity-60 grayscale-[35%]"
           )}
         />

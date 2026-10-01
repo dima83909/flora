@@ -13,6 +13,7 @@ import { getDb } from "@/server/db"
 const db = getDb()
 const failures: string[] = []
 const created: number[] = []
+let stockBefore: number | null | undefined
 const check = (ok: boolean, message: string) => {
   if (!ok) failures.push(message)
 }
@@ -90,13 +91,16 @@ async function main() {
 
   // 4. Availability is checked on the server, and nothing is written when it fails
   const countBefore = await db.order.count()
+  // The catalogue has no tracked stock of its own, so the check sets one and restores it afterwards
+  stockBefore = prices.get("berry-sorbet")!.stock
+  await db.product.update({ where: { slug: "berry-sorbet" }, data: { stock: 3 } })
   const unavailable = await place({
     customer,
     items: [
       { slug: "quiet-harbour", quantity: 1 },
       { slug: "no-such-product", quantity: 1 },
       { slug: "white-peony", quantity: 1 },
-      { slug: "berry-sorbet", quantity: prices.get("berry-sorbet")!.stock! + 1 },
+      { slug: "berry-sorbet", quantity: 4 },
     ],
   })
   const problems = !unavailable.ok && unavailable.reason === "unavailable" ? unavailable.items : []
@@ -121,6 +125,7 @@ main()
   })
   .finally(async () => {
     if (created.length) await db.order.deleteMany({ where: { number: { in: created } } })
+    if (stockBefore !== undefined) await db.product.update({ where: { slug: "berry-sorbet" }, data: { stock: stockBefore } })
     if (failures.length) {
       console.error(`\n${failures.length} problem(s):\n- ${failures.join("\n- ")}`)
       process.exitCode = 1

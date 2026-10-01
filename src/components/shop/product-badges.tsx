@@ -9,8 +9,7 @@ export function getBadges(product: Product): Badge[] {
   const discount = discountPercent(product)
   if (product.availability === "out_of_stock") badges.push({ text: "Немає в наявності", tone: "muted" })
   if (discount) badges.push({ text: `−${discount}%`, tone: "sale" })
-  if (product.label === "new") badges.push({ text: "Новинка", tone: "new" })
-  if (product.label === "popular") badges.push({ text: "Популярне", tone: "popular" })
+  // "Новинка" and "Популярне" stay hidden until product.label is backed by real sales and arrival dates
   return badges
 }
 

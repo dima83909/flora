@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { CameraIcon, FeatherIcon, TruckIcon } from "lucide-react"
+import { TruckIcon } from "lucide-react"
 
 import { ProductGallery } from "@/components/product/product-gallery"
 import { PurchasePanel } from "@/components/product/purchase-panel"
@@ -30,8 +30,7 @@ export async function generateMetadata({ params }: PageProps<"/bouquets/[slug]">
   if (!product) notFound()
 
   const title = `${product.name}: ${formatPrice(product.price)}`
-  const isGift = isGiftCategory(product.category)
-  const description = `${product.description} ${isGift ? "Доставка по Україні разом із букетом або окремо." : "Доставка по Україні, фото букета перед відправкою."}`
+  const description = `${product.description} Доставка по Україні.`
   const url = canonicalPath(`/bouquets/${product.slug}`)
   const images = productImageUrls(product)
 
@@ -53,7 +52,7 @@ export async function generateMetadata({ params }: PageProps<"/bouquets/[slug]">
 
 function deliveryPromise(product: Product) {
   if (product.availability === "preorder") {
-    return `Під замовлення: квіти привозимо за ${availabilityText(product).replace("Під замовлення, ", "")}, доставка по всій Україні`
+    return "Під замовлення, доставка по всій Україні"
   }
   if (product.availability === "out_of_stock") return "Зараз немає в наявності. Додайте в обране, щоб повернутися пізніше"
   return "Доставляємо по всій Україні"
@@ -129,16 +128,6 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
                     Вартість і час доставки менеджер узгодить з вами в Telegram
                   </span>
                 </span>
-              </li>
-              {isGift ? null : (
-                <li className="flex gap-3">
-                  <CameraIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-stem" strokeWidth={1.5} />
-                  Надішлемо фото саме вашого букета перед доставкою
-                </li>
-              )}
-              <li className="flex gap-3">
-                <FeatherIcon aria-hidden className="mt-0.5 size-5 shrink-0 text-stem" strokeWidth={1.5} />
-                Листівка з вашим текстом, написана від руки, безкоштовно
               </li>
             </ul>
 

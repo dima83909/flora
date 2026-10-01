@@ -11,6 +11,7 @@ import { isDeepStrictEqual } from "node:util"
 
 import { careByCategory } from "../prisma/seed-data/care"
 import { categories as mockCategories, products as fixtureProducts } from "../prisma/seed-data/catalog"
+import { photosOnDisk } from "../prisma/seed-data/photos"
 import { applyFilters, sortOptions, priceRanges, type CatalogFilters } from "@/lib/catalog"
 import type { Product } from "@/types/catalog"
 import {
@@ -23,11 +24,11 @@ import {
 } from "@/server/catalog"
 import { getDb } from "@/server/db"
 
-// The seed adds per-category care tips to every fixture product
-const mockProducts: Product[] = fixtureProducts.map((p) => ({
-  ...p,
-  careInstructions: careByCategory[p.category] ?? [],
-}))
+// The seed adds per-category care tips and the photographs found on disk to every fixture product
+const mockProducts: Product[] = fixtureProducts.map((p) => {
+  const images = p.images?.length ? p.images : photosOnDisk(p.slug)
+  return { ...p, careInstructions: careByCategory[p.category] ?? [], ...(images.length ? { images } : {}) }
+})
 
 const failures: string[] = []
 const check = (ok: boolean, message: string) => {

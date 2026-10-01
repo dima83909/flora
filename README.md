@@ -169,5 +169,5 @@ ADMIN_LOGIN=manager ADMIN_NAME="Ім'я менеджера" ADMIN_PASSWORD='не
 - `prisma/` — схема, міграції, seed і початкові дані каталогу (`prisma/seed-data`); `scripts/check-catalog.ts` — перевірка даних
 - `src/lib/structured-data.ts` — JSON-LD товарів; фото додаються через поле `images` у даних товару
 - `src/config/site.ts` — назва, контакти, навігація
-- `src/data` — контент, що не є каталогом: доставка, квіти тижня
+- `src/data` — контент, що не є каталогом: кроки доставки
 - `src/types` — спільні типи

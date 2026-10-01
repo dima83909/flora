@@ -131,7 +131,7 @@ export function CatalogView({ products, categories }: CatalogViewProps) {
         <p className="mt-4 text-base leading-relaxed text-ink-soft md:text-lg">
           {category
             ? category.description
-            : "Букети, композиції та подарунки майстерні. Склад може трохи змінюватися залежно від поставки, палітра лишається тією ж."}
+            : "Букети, композиції та подарунки з доставкою по всій Україні."}
         </p>
       </header>
 

@@ -12,6 +12,7 @@ import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "../src/generated/prisma/client"
 import { careByCategory } from "./seed-data/care"
 import { categories, products } from "./seed-data/catalog"
+import { photosOnDisk } from "./seed-data/photos"
 import { toMinor } from "../src/lib/money"
 import { toStockFields } from "../src/server/catalog/availability"
 
@@ -40,6 +41,7 @@ async function main() {
         name: category.name,
         description: category.description,
         illustration: category.visual,
+        imageUrl: category.image ?? null,
         sortOrder: (index + 1) * 10,
         isActive: true,
         isFeatured: category.featured ?? false,
@@ -81,11 +83,12 @@ async function main() {
         select: { id: true },
       })
 
-      // Real photography, when present in the fixtures, replaces the stored gallery
-      if (product.images?.length) {
-        await tx.productImage.deleteMany({ where: { productId: row.id } })
+      // The stored gallery mirrors the fixtures, or else the photographs found on disk
+      const images = product.images?.length ? product.images : photosOnDisk(product.slug)
+      await tx.productImage.deleteMany({ where: { productId: row.id } })
+      if (images.length) {
         await tx.productImage.createMany({
-          data: product.images.map((url, sortOrder) => ({ productId: row.id, url, alt: product.name, sortOrder })),
+          data: images.map((url, sortOrder) => ({ productId: row.id, url, alt: product.name, sortOrder })),
         })
       }
     }

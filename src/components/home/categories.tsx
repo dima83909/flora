@@ -16,7 +16,6 @@ export async function Categories() {
         <SectionHeading
           id="categories-title"
           title="Для кожного приводу"
-          description="Від одного букета на побачення до оформлення весілля на двісті гостей."
         />
       </div>
 
@@ -28,6 +27,8 @@ export async function Categories() {
               <div className="arch aspect-3/4 overflow-hidden">
                 <ProductImage
                   visual={category.visual}
+                  src={category.image}
+                  sizes="(min-width: 1024px) 20vw, (min-width: 640px) 40vw, 62vw"
                   className="transition-transform duration-700 ease-petal group-hover:scale-[1.04]"
                 />
               </div>

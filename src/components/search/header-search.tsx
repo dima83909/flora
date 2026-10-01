@@ -101,7 +101,7 @@ export function HeaderSearch() {
 
           {!trimmed ? (
             <div className="mt-6">
-              <h2 className="text-sm font-medium text-ink-soft">Часто шукають</h2>
+              <h2 className="text-sm font-medium text-ink-soft">Наприклад</h2>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {SUGGESTIONS.map((suggestion) => (
                   <li key={suggestion}>
@@ -127,7 +127,7 @@ export function HeaderSearch() {
                       className="-mx-3 flex items-center gap-4 rounded-2xl px-3 py-3 transition-colors hover:bg-linen"
                     >
                       <span className="block aspect-4/5 w-14 shrink-0 overflow-hidden rounded-xl">
-                        <ProductImage visual={product.visual} />
+                        <ProductImage visual={product.visual} src={product.images?.[0]} sizes="56px" />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-heading text-[1.0625rem] text-ink">{product.name}</span>

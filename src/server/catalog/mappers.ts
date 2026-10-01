@@ -25,6 +25,7 @@ export function toStorefrontCategory(category: DbCategory): Category {
     name: category.name,
     description: category.description ?? "",
     visual: toVisual(category.illustration),
+    ...(category.imageUrl ? { image: category.imageUrl } : {}),
     ...(category.isFeatured ? { featured: true } : {}),
     ...(category.showInNav ? { inNavigation: true } : {}),
   }

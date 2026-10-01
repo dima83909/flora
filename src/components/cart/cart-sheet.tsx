@@ -84,7 +84,7 @@ export function CartSheet() {
                     tabIndex={-1}
                     aria-hidden
                   >
-                    <ProductImage visual={product.visual} />
+                    <ProductImage visual={product.visual} src={product.images?.[0]} sizes="80px" />
                   </Link>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">

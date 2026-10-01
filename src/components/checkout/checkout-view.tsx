@@ -150,7 +150,7 @@ export function CheckoutView() {
               return (
                 <li key={slug} className="flex gap-4 py-4 first:pt-0 last:pb-0">
                   <div className="aspect-4/5 w-16 shrink-0 overflow-hidden rounded-xl bg-paper">
-                    {product ? <ProductImage visual={product.visual} /> : null}
+                    {product ? <ProductImage visual={product.visual} src={product.images?.[0]} sizes="64px" /> : null}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-heading text-[1.0625rem] leading-snug text-ink">

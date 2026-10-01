@@ -49,8 +49,10 @@ export type Category = {
   slug: string
   name: string
   description: string
-  /** Illustration used on the homepage category tile */
+  /** Illustration used on the homepage category tile when there is no photograph */
   visual: ProductVisual
+  /** Photograph for the category tile, root-relative; usually a product's main photo */
+  image?: string
   /** Shown on the homepage */
   featured?: boolean
   /** Linked from the main header navigation */
