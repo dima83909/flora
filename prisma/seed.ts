@@ -1,9 +1,13 @@
 /**
  * Seeds the catalogue from the fixtures in prisma/seed-data.
  *
- * Idempotent: categories and products are upserted by slug, so it can be re-run
- * after editing the fixtures. Nothing is deleted, because orders may reference
- * existing products.
+ * Safe to re-run: by default it only adds categories and products that are missing
+ * (matched by slug) and leaves existing rows alone, so prices, stock and visibility
+ * edited in the database survive. A product that has no photos yet still gets the
+ * ones found on disk. Nothing is deleted, because orders may reference existing products.
+ *
+ * SEED_OVERWRITE=1 makes the fixtures win: existing rows and their galleries are reset
+ * to what prisma/seed-data says. Use it after editing the fixtures, never by habit.
  */
 import "dotenv/config"
 
@@ -23,6 +27,8 @@ if (!connectionString) {
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 
+const overwrite = process.env.SEED_OVERWRITE === "1"
+
 async function main() {
   // The homepage shows the four most popular items labelled "popular"
   const featuredSlugs = new Set(
@@ -32,6 +38,8 @@ async function main() {
       .slice(0, 4)
       .map((p) => p.slug)
   )
+
+  const counts = { created: 0, overwritten: 0, kept: 0 }
 
   await prisma.$transaction(async (tx) => {
     const categoryIds = new Map<string, string>()
@@ -47,12 +55,17 @@ async function main() {
         isFeatured: category.featured ?? false,
         showInNav: category.inNavigation ?? false,
       }
-      const row = await tx.category.upsert({
-        where: { slug: category.slug },
-        create: { slug: category.slug, ...data },
-        update: data,
-        select: { id: true },
-      })
+      const existing = await tx.category.findUnique({ where: { slug: category.slug }, select: { id: true } })
+      const row =
+        existing && !overwrite
+          ? existing
+          : await tx.category.upsert({
+              where: { slug: category.slug },
+              create: { slug: category.slug, ...data },
+              update: data,
+              select: { id: true },
+            })
+      counts[existing ? (overwrite ? "overwritten" : "kept") : "created"]++
       categoryIds.set(category.slug, row.id)
     }
 
@@ -76,16 +89,27 @@ async function main() {
         illustration: product.visual,
         createdAt: new Date(`${product.addedAt}T00:00:00Z`),
       }
-      const row = await tx.product.upsert({
+      const existing = await tx.product.findUnique({
         where: { slug: product.slug },
-        create: { slug: product.slug, ...data },
-        update: data,
-        select: { id: true },
+        select: { id: true, _count: { select: { images: true } } },
       })
+      const keep = existing !== null && !overwrite
+      const row = keep
+        ? existing
+        : await tx.product.upsert({
+            where: { slug: product.slug },
+            create: { slug: product.slug, ...data },
+            update: data,
+            select: { id: true },
+          })
+      counts[existing ? (overwrite ? "overwritten" : "kept") : "created"]++
+
+      // A kept product only gains photos while its gallery is empty; it never loses any
+      if (keep && existing._count.images > 0) continue
 
       // The stored gallery mirrors the fixtures, or else the photographs found on disk
       const images = product.images?.length ? product.images : photosOnDisk(product.slug)
-      await tx.productImage.deleteMany({ where: { productId: row.id } })
+      if (!keep) await tx.productImage.deleteMany({ where: { productId: row.id } })
       if (images.length) {
         await tx.productImage.createMany({
           data: images.map((url, sortOrder) => ({ productId: row.id, url, alt: product.name, sortOrder })),
@@ -95,7 +119,11 @@ async function main() {
   })
 
   const [categoryCount, productCount] = await Promise.all([prisma.category.count(), prisma.product.count()])
-  console.log(`Seeded ${categoryCount} categories and ${productCount} products.`)
+  console.log(
+    `Seed: ${counts.created} created, ${counts.overwritten} overwritten, ${counts.kept} left unchanged. ` +
+      `The database now has ${categoryCount} categories and ${productCount} products.`
+  )
+  if (counts.kept) console.log("Existing rows were not touched. Set SEED_OVERWRITE=1 to reset them to the fixtures.")
 }
 
 main()

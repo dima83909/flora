@@ -62,7 +62,12 @@ npm run db:seed      # завантажити 7 категорій і 23 тов�
 npm run db:check     # перевірити дані й фільтри каталогу через серверний сервіс
 ```
 
-Seed ідемпотентний: повторний запуск оновлює записи за slug і нічого не видаляє.
+Seed безпечно запускати повторно: він лише додає категорії й товари, яких ще немає (за slug), і не чіпає
+наявні записи, тож ціни, залишки й видимість, змінені в базі, зберігаються. Товар без жодного фото отримує
+фото, знайдені в `public/images/products/<slug>`. Нічого не видаляється.
+
+Щоб перезаписати наявні записи й галереї значеннями з `prisma/seed-data` (після правки фікстур), запустіть
+`SEED_OVERWRITE=1 npm run db:seed`. Усі правки, зроблені в базі вручну, при цьому буде втрачено.
 На сервері замість `db:migrate` використовуйте `npm run db:deploy`.
 
 Інші команди: `npm run db:generate`, `npm run db:validate`, `npm run db:studio`.
@@ -168,13 +173,11 @@ PURGE_MONTHS=24 PURGE_CONFIRM=1 npm run orders:purge  # видалити
 ```
 
 Без `PURGE_MONTHS` команда нічого не робить і завершується помилкою. Термін зберігання визначає власник
-магазину; у політиці конфіденційності (`/privacy`) він має збігатися з тим, що ви реально застосовуєте.
+магазину.
 Обидві команди перевіряє `npm run db:check`.
 
-## Юридичні сторінки та бренд
+## Бренд
 
-- `/privacy` і `/offer` беруть реквізити продавця з `src/config/legal.ts`. Поки поле не заповнене, на сторінці
-  стоїть видима позначка «потрібно вказати», а сторінка закрита від індексації.
 - Іконки й зображення для соцмереж лежать у `src/app` (`icon.svg`, `favicon.ico`, `apple-icon.png`,
   `opengraph-image.png`); `node scripts/brand/generate.mjs` перемальовує їх із SVG-джерел (потрібна macOS).
 
@@ -196,6 +199,7 @@ PURGE_MONTHS=24 PURGE_CONFIRM=1 npm run orders:purge  # видалити
 - **Міграції не запускаються автоматично.** Перед deploy, який змінює схему, виконайте `npm run db:deploy`
   зі своєї машини з production-рядком підключення.
 - **Seed запускається з репозиторію**, бо підключає фото, які знайшов у `public/images/products`.
+  На production не використовуйте `SEED_OVERWRITE=1`, якщо каталог уже правили в базі.
 - **`npm run db:check` не для production-бази:** він створює й видаляє тестові замовлення.
 - Prisma Client генерується в `postinstall`; для цього база не потрібна.
 
@@ -222,7 +226,6 @@ DATABASE_URL='<direct production url>' ADMIN_LOGIN=<login> ADMIN_NAME='<name>' A
 - `/checkout` — оформлення замовлення (noindex)
 - `/order-success/[number]` — підтвердження замовлення (noindex)
 - `/admin/login`, `/admin/orders`, `/admin/orders/[number]` — адмін-панель (noindex, закрита в robots.txt)
-- `/privacy`, `/offer` — політика конфіденційності та публічна оферта
 - `/sitemap.xml`, `/robots.txt`
 
 ## Структура

@@ -73,6 +73,4 @@ export function buildFooterShopNav(categories: { slug: string; name: string; inN
 
 export const footerCustomerNav: NavItem[] = [
   { title: "Доставка й оплата", href: "/#delivery" },
-  { title: "Публічна оферта", href: "/offer" },
-  { title: "Політика конфіденційності", href: "/privacy" },
 ]
