@@ -195,6 +195,21 @@ model OrderItem {
   @@map("order_items")
 }
 
+/// Successful guest orders by client address and phone, counted to slow down order spam.
+/// Holds no more than the orders table already does; rows older than a day are purged.
+model OrderAttempt {
+  id        String   @id @default(cuid())
+  /// Null when the client address is unknown (no trusted proxy)
+  ip        String?
+  /// Normalised E.164 phone from the order
+  phone     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ip, createdAt])
+  @@index([phone, createdAt])
+  @@map("order_attempts")
+}
+
 // ─── Admin ───────────────────────────────────────────────────────────────────
 // Staff-only accounts for the order panel. Customers never get accounts.
 

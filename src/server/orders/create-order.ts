@@ -4,6 +4,7 @@ import { MAX_QUANTITY } from "@/lib/cart-limits"
 import { customerFieldErrors, orderInputSchema, type CustomerField } from "@/lib/order-schema"
 import { toStorefrontAvailability } from "@/server/catalog/availability"
 import { getDb } from "@/server/db"
+import { isOrderRateLimited, purgeOldOrderAttempts, recordPlacedOrder } from "@/server/orders/rate-limit"
 
 export type UnavailableItem = {
   slug: string
@@ -18,6 +19,7 @@ export type CreateOrderResult =
   | { ok: true; number: number }
   | { ok: false; reason: "invalid"; message: string; fieldErrors: Partial<Record<CustomerField, string>> }
   | { ok: false; reason: "unavailable"; message: string; items: UnavailableItem[] }
+  | { ok: false; reason: "rate_limited"; message: string }
   | { ok: false; reason: "error"; message: string }
 
 class UnavailableItemsError extends Error {
@@ -31,7 +33,10 @@ class UnavailableItemsError extends Error {
  * contact details; prices, availability and the subtotal come from PostgreSQL,
  * read and written inside a single transaction.
  */
-export async function createGuestOrder(input: unknown): Promise<CreateOrderResult> {
+export async function createGuestOrder(
+  input: unknown,
+  { ip = null }: { ip?: string | null } = {}
+): Promise<CreateOrderResult> {
   const parsed = orderInputSchema.safeParse(input)
   if (!parsed.success) {
     return {
@@ -41,7 +46,19 @@ export async function createGuestOrder(input: unknown): Promise<CreateOrderResul
       fieldErrors: customerFieldErrors(parsed.error),
     }
   }
-  const { customer, items } = parsed.data
+  const { customer, items, website } = parsed.data
+
+  // Only a bot fills the hidden field; answer like any failure so it learns nothing
+  if (website) {
+    return { ok: false, reason: "error", message: "Не вдалося оформити замовлення. Спробуйте ще раз за кілька хвилин." }
+  }
+  if (await isOrderRateLimited(customer.phone, ip)) {
+    return {
+      ok: false,
+      reason: "rate_limited",
+      message: "Забагато замовлень за короткий час. Спробуйте пізніше або напишіть нам у Telegram.",
+    }
+  }
 
   // A slug may appear once per order; merge accidental duplicates
   const quantities = new Map<string, number>()
@@ -101,6 +118,7 @@ export async function createGuestOrder(input: unknown): Promise<CreateOrderResul
       })
       if (problems.length) throw new UnavailableItemsError(problems)
 
+      await recordPlacedOrder(tx, customer.phone, ip)
       return tx.order.create({
         data: {
           customerName: customer.name,
@@ -115,6 +133,7 @@ export async function createGuestOrder(input: unknown): Promise<CreateOrderResul
       })
     })
 
+    await purgeOldOrderAttempts().catch(() => undefined)
     return { ok: true, number: order.number }
   } catch (error) {
     if (error instanceof UnavailableItemsError) {

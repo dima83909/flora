@@ -95,6 +95,8 @@ export const orderLineSchema = z.object({
 
 export const orderInputSchema = z.object({
   customer: customerSchema,
+  /** Honeypot: hidden from people, so only bots fill it in. Must stay empty. */
+  website: z.string().max(500).optional(),
   items: z
     .array(orderLineSchema)
     .min(1, "Кошик порожній")

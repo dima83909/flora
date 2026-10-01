@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
@@ -15,7 +16,9 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:check": "tsx --conditions=react-server scripts/check-catalog.ts && tsx --conditions=react-server scripts/check-orders.ts && tsx --conditions=react-server scripts/check-admin.ts",
-    "admin:create": "tsx --conditions=react-server scripts/create-admin.ts"
+    "admin:create": "tsx --conditions=react-server scripts/create-admin.ts",
+    "maintenance:cleanup": "tsx --conditions=react-server scripts/cleanup.ts",
+    "orders:purge": "tsx --conditions=react-server scripts/purge-orders.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
@@ -34,7 +37,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.4",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -46,6 +49,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "tw-animate-css": "^1.4.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.3"
   }
 }

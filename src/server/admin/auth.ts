@@ -1,10 +1,10 @@
 import "server-only"
 
 import { cache } from "react"
-import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
+import { getClientIp } from "@/server/client-ip"
 import { getDb } from "@/server/db"
 import { checkLoginAllowed, clearLoginFailures, recordLoginFailure } from "@/server/admin/login-throttle"
 import { decoyHash, PASSWORD_MAX_LENGTH, verifyPassword } from "@/server/admin/password"
@@ -39,18 +39,12 @@ export type SignInResult =
   | { ok: false; reason: "invalid" }
   | { ok: false; reason: "throttled"; retryAfterMinutes: number }
 
-async function clientIp() {
-  // Trustworthy only behind a proxy that overwrites the header (see README)
-  const list = await headers()
-  return list.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 64) || list.get("x-real-ip")?.slice(0, 64) || null
-}
-
 export async function signIn(input: unknown): Promise<SignInResult> {
   const parsed = credentialsSchema.safeParse(input)
   if (!parsed.success) return { ok: false, reason: "invalid" }
   const { login, password } = parsed.data
 
-  const ip = await clientIp()
+  const ip = await getClientIp()
   const throttle = await checkLoginAllowed(login, ip)
   if (!throttle.allowed) return { ok: false, reason: "throttled", retryAfterMinutes: throttle.retryAfterMinutes }
 
@@ -65,7 +59,7 @@ export async function signIn(input: unknown): Promise<SignInResult> {
     return { ok: false, reason: "invalid" }
   }
 
-  await clearLoginFailures(login)
+  await clearLoginFailures(login, ip)
   await getDb().adminUser.update({ where: { id: admin.id }, data: { lastLoginAt: new Date() } })
   await createSession(admin.id)
   return { ok: true }
