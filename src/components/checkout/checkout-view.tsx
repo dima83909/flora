@@ -31,6 +31,8 @@ export function CheckoutView() {
   const { getProduct } = useCatalog()
 
   const [values, setValues] = useState<Values>({ name: "", phone: "", city: "", comment: "" })
+  // Honeypot: invisible to people, so it stays empty unless a bot fills every input
+  const [website, setWebsite] = useState("")
   const [errors, setErrors] = useState<Partial<Record<CustomerField, string>>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [unavailable, setUnavailable] = useState<UnavailableItem[]>([])
@@ -78,6 +80,7 @@ export function CheckoutView() {
       try {
         const result = await placeOrder({
           customer: values,
+          website,
           items: snapshot.map(({ slug, quantity }) => ({ slug, quantity })),
         })
         if (result.ok) {
@@ -228,6 +231,20 @@ export function CheckoutView() {
           Доставляємо по всій Україні. Адресу, дату й час доставки менеджер уточнить у Telegram,
           тож зараз потрібні лише ім&apos;я, номер телефону й місто.
         </p>
+
+        <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+          <label>
+            Не заповнюйте це поле
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </label>
+        </div>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <Field

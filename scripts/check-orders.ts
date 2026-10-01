@@ -19,8 +19,10 @@ const check = (ok: boolean, message: string) => {
 }
 const customer = { name: "Тест Перевірка", phone: "050 123 45 67", city: "Київ" }
 
-async function place(input: unknown): Promise<CreateOrderResult> {
-  const result = await createGuestOrder(input)
+const startedAt = new Date()
+
+async function place(input: unknown, options?: { ip?: string | null }): Promise<CreateOrderResult> {
+  const result = await createGuestOrder(input, options)
   if (result.ok) created.push(result.number)
   return result
 }
@@ -115,6 +117,41 @@ async function main() {
   const preorder = await place({ customer, items: [{ slug: "pink-peony", quantity: 1 }] })
   check(preorder.ok, "preorder items can be ordered")
 
+  // 5. Spam protection: honeypot and rate limits (fixtures are inserted directly to keep this fast)
+  const line = [{ slug: "quiet-harbour", quantity: 1 }]
+  const ordersBeforeSpam = await db.order.count()
+  const bot = await place({ customer, website: "https://spam.example", items: line })
+  check(!bot.ok && bot.reason === "error", `filled honeypot should be refused: ${JSON.stringify(bot)}`)
+  check((await db.order.count()) === ordersBeforeSpam, "a honeypot order must not be written")
+
+  const hourAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000)
+  const spamPhone = "+380509990001"
+  await db.orderAttempt.createMany({ data: Array.from({ length: 5 }, () => ({ phone: spamPhone, ip: null })) })
+  const byPhone = await place({ customer: { ...customer, phone: spamPhone }, items: line })
+  check(!byPhone.ok && byPhone.reason === "rate_limited", `5 recent orders should limit the phone: ${JSON.stringify(byPhone)}`)
+  const otherPhone = await place({ customer: { ...customer, phone: "+380509990002" }, items: line })
+  check(otherPhone.ok, "the phone limit leaked to another number")
+
+  const spamIp = "203.0.113.50"
+  await db.orderAttempt.createMany({ data: Array.from({ length: 10 }, (_, i) => ({ phone: `+38050999${i}000`, ip: spamIp })) })
+  const byIp = await place({ customer: { ...customer, phone: "+380509990003" }, items: line }, { ip: spamIp })
+  check(!byIp.ok && byIp.reason === "rate_limited", `10 recent orders should limit the address: ${JSON.stringify(byIp)}`)
+  const unknownIp = await place({ customer: { ...customer, phone: "+380509990004" }, items: line })
+  check(unknownIp.ok, "an unknown address must not be limited by the address counter")
+
+  const stalePhone = "+380509990005"
+  await db.orderAttempt.createMany({
+    data: Array.from({ length: 5 }, () => ({ phone: stalePhone, ip: null, createdAt: hourAgo(120) })),
+  })
+  check((await place({ customer: { ...customer, phone: stalePhone }, items: line })).ok, "orders older than an hour must not count")
+
+  const trackedIp = "198.51.100.77"
+  const tracked = await place({ customer: { ...customer, phone: "+380509990006" }, items: line }, { ip: trackedIp })
+  check(
+    tracked.ok && (await db.orderAttempt.count({ where: { ip: trackedIp, phone: "+380509990006" } })) === 1,
+    "a placed order should be recorded with its address"
+  )
+
   console.log(`Checked guest orders: ${invalid.length + 5} scenarios, ${created.length} test orders created.`)
   check((await db.order.count()) === ordersBefore + created.length, "unexpected orders were created")
 }
@@ -124,6 +161,8 @@ main()
     failures.push(String(error))
   })
   .finally(async () => {
+    await db.orderAttempt.deleteMany({ where: { createdAt: { gte: startedAt } } })
+    await db.orderAttempt.deleteMany({ where: { phone: { startsWith: "+38050999" } } })
     if (created.length) await db.order.deleteMany({ where: { number: { in: created } } })
     if (stockBefore !== undefined) await db.product.update({ where: { slug: "berry-sorbet" }, data: { stock: stockBefore } })
     if (failures.length) {

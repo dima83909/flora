@@ -25,6 +25,7 @@ import {
 const db = getDb()
 const failures: string[] = []
 const created: number[] = []
+const startedAt = new Date()
 const check = (ok: boolean, message: string) => {
   if (!ok) failures.push(message)
 }
@@ -169,6 +170,7 @@ main()
   .catch((error) => failures.push(String(error)))
   .finally(async () => {
     await db.order.deleteMany({ where: { number: { in: created } } })
+    await db.orderAttempt.deleteMany({ where: { createdAt: { gte: startedAt } } })
     await db.$disconnect()
     if (failures.length) {
       console.error(`✗ Admin check failed:\n${failures.map((f) => `  - ${f}`).join("\n")}`)

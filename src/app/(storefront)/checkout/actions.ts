@@ -1,5 +1,6 @@
 "use server"
 
+import { getClientIp } from "@/server/client-ip"
 import { createGuestOrder, type CreateOrderResult } from "@/server/orders/create-order"
 
 /**
@@ -7,5 +8,5 @@ import { createGuestOrder, type CreateOrderResult } from "@/server/orders/create
  * unknown and fully validated (and re-priced) on the server.
  */
 export async function placeOrder(input: unknown): Promise<CreateOrderResult> {
-  return createGuestOrder(input)
+  return createGuestOrder(input, { ip: await getClientIp() })
 }
