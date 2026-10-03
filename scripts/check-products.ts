@@ -15,7 +15,6 @@ import {
   deleteProduct,
   getProductById,
   searchProducts,
-  setProductActive,
   updateProduct,
 } from "@/server/catalog/manage"
 import { getDb } from "@/server/db"
@@ -115,12 +114,17 @@ async function main() {
   check(preorders.total === 1 && preorders.products[0].id === created.id, "availability filter wrong")
 
   // 7. Hiding removes it from the storefront but not from the admin list
-  check((await setProductActive(created.id, false)).ok, "hiding failed")
+  const visible = (await getProductById(created.id))!.updatedAt
+  const hiddenNow = await updateProduct(created.id, visible, await form({ name: "Інша назва", isActive: false }))
+  check(hiddenNow.ok, `hiding failed: ${JSON.stringify(hiddenNow)}`)
   check((await getProductBySlug(SLUG)) === null, "a hidden product is still on the storefront")
   const hidden = await searchProducts({ query: SLUG, visibility: "hidden" })
   check(hidden.total === 1 && hidden.products[0].id === created.id, "hidden filter wrong")
-  check((await setProductActive(created.id, true)).ok && (await getProductBySlug(SLUG)) !== null, "publishing failed")
-  check(!(await setProductActive("no-such-product", true)).ok, "hiding a missing product should fail")
+  const visibleCount = (await searchProducts({ query: SLUG, visibility: "active" })).total
+  check(visibleCount === 1, `active filter should find only the twin, found ${visibleCount}`)
+  const hiddenAt = (await getProductById(created.id))!.updatedAt
+  const shown = await updateProduct(created.id, hiddenAt, await form({ name: "Інша назва", isActive: true }))
+  check(shown.ok && (await getProductBySlug(SLUG)) !== null, "publishing again failed")
 
   // 8. Deletion keeps past orders intact
   const order = await createGuestOrder({

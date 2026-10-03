@@ -131,22 +131,29 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
             </ul>
 
             <div className="mt-8 divide-y border-y">
-              <Details title={isGift ? "Опис" : "Склад"} defaultOpen>
-                <ul className="space-y-1.5">
-                  {product.stems.map((stem) => (
-                    <li key={stem} className="flex gap-2.5">
-                      <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-rose" />
-                      {stem}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-4 text-sm text-muted-foreground">{product.size}</p>
-              </Details>
+              {/* Products added in the admin panel may leave the stem list and size empty */}
+              {product.stems.length || product.size ? (
+                <Details title={isGift ? "Опис" : "Склад"} defaultOpen>
+                  {product.stems.length ? (
+                    <ul className="space-y-1.5">
+                      {product.stems.map((stem, index) => (
+                        <li key={index} className="flex gap-2.5">
+                          <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-rose" />
+                          {stem}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {product.size ? (
+                    <p className={cn("text-sm text-muted-foreground", product.stems.length && "mt-4")}>{product.size}</p>
+                  ) : null}
+                </Details>
+              ) : null}
               {care ? (
                 <Details title="Догляд">
                   <ul className="space-y-2">
-                    {care.map((tip) => (
-                      <li key={tip}>{tip}</li>
+                    {care.map((tip, index) => (
+                      <li key={index}>{tip}</li>
                     ))}
                   </ul>
                 </Details>

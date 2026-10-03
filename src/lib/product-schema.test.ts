@@ -5,6 +5,8 @@ import {
   parsePrice,
   productFieldErrors,
   productFormSchema,
+  toFormPrice,
+  toFormValues,
   type ProductFormInput,
 } from "@/lib/product-schema"
 
@@ -117,5 +119,18 @@ describe("formDiscountPercent", () => {
     expect(formDiscountPercent("1500", "2000")).toBe(25)
     expect(formDiscountPercent("2000", "2000")).toBeNull()
     expect(formDiscountPercent("2000", "")).toBeNull()
+  })
+})
+
+describe("toFormValues", () => {
+  it("round-trips a stored product through the form", () => {
+    const stored = productFormSchema.parse({ ...valid, oldPrice: "2 300,50", availability: "PREORDER", leadTimeDays: "4" })
+    expect(productFormSchema.parse(toFormValues(stored))).toEqual(stored)
+  })
+
+  it("shows whole hryvnias without kopiykas", () => {
+    expect(toFormPrice(185000)).toBe("1850")
+    expect(toFormPrice(185050)).toBe("1850,50")
+    expect(toFormPrice(185005)).toBe("1850,05")
   })
 })

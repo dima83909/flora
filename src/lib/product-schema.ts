@@ -178,3 +178,66 @@ export function formDiscountPercent(price: string, oldPrice: string) {
   if (!current || !before || before <= current) return null
   return Math.round((1 - current / before) * 100)
 }
+
+/** Kopiykas → what the price field shows: "1850" or "1850,50" */
+export function toFormPrice(minor: number) {
+  return minor % 100 === 0 ? String(minor / 100) : (minor / 100).toFixed(2).replace(".", ",")
+}
+
+type StoredProduct = {
+  name: string
+  categoryId: string
+  composition: string
+  stems: string[]
+  description: string
+  careInstructions: string[]
+  size: string | null
+  priceMinor: number
+  compareAtPriceMinor: number | null
+  availability: ProductAvailabilityValue
+  leadTimeDays: number | null
+  isNew: boolean
+  isPopular: boolean
+  isFeatured: boolean
+  isActive: boolean
+}
+
+/** A stored product as the form shows it; parsing the result gives the same product back */
+export function toFormValues(product: StoredProduct): Required<ProductFormInput> {
+  return {
+    name: product.name,
+    categoryId: product.categoryId,
+    composition: product.composition,
+    stems: product.stems.join("\n"),
+    description: product.description,
+    careInstructions: product.careInstructions.join("\n"),
+    size: product.size ?? "",
+    price: toFormPrice(product.priceMinor),
+    oldPrice: product.compareAtPriceMinor === null ? "" : toFormPrice(product.compareAtPriceMinor),
+    availability: product.availability,
+    leadTimeDays: product.leadTimeDays === null ? "" : String(product.leadTimeDays),
+    isNew: product.isNew,
+    isPopular: product.isPopular,
+    isFeatured: product.isFeatured,
+    isActive: product.isActive,
+  }
+}
+
+/** A blank form for a new product: in stock, published, no badges */
+export const EMPTY_PRODUCT_FORM: Required<ProductFormInput> = {
+  name: "",
+  categoryId: "",
+  composition: "",
+  stems: "",
+  description: "",
+  careInstructions: "",
+  size: "",
+  price: "",
+  oldPrice: "",
+  availability: "IN_STOCK",
+  leadTimeDays: "",
+  isNew: false,
+  isPopular: false,
+  isFeatured: false,
+  isActive: true,
+}

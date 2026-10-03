@@ -182,17 +182,6 @@ export async function updateProduct(id: string, expectedUpdatedAt: Date, input: 
 
 export type ProductChangeResult = { ok: true; slug: string } | { ok: false; reason: "not_found" }
 
-/** Publishes or hides a product; hidden products stay in the admin panel and in past orders */
-export async function setProductActive(id: string, isActive: boolean): Promise<ProductChangeResult> {
-  try {
-    const product = await getDb().product.update({ where: { id }, data: { isActive }, select: { slug: true } })
-    return { ok: true, slug: product.slug }
-  } catch (error) {
-    if (isNotFound(error)) return { ok: false, reason: "not_found" }
-    throw error
-  }
-}
-
 /**
  * Permanently deletes a product and its photo records. Past orders keep their
  * snapshot of it; their link to the product becomes empty (ON DELETE SET NULL).

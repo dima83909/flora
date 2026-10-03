@@ -10,7 +10,6 @@ import {
   getCategoryOptions,
   getProductById,
   searchProducts,
-  setProductActive,
   updateProduct,
   type AdminProductSearch,
 } from "@/server/catalog/manage"
@@ -69,13 +68,6 @@ export async function createAdminProduct(input: unknown) {
 export async function updateAdminProduct(id: string, expectedUpdatedAt: Date, input: unknown) {
   await requireAdmin()
   const result = await updateProduct(id, expectedUpdatedAt, input)
-  if (result.ok) refreshStorefront()
-  return result
-}
-
-export async function setAdminProductActive(id: string, isActive: boolean) {
-  await requireAdmin()
-  const result = await setProductActive(id, isActive)
   if (result.ok) refreshStorefront()
   return result
 }
