@@ -173,6 +173,27 @@ describe("sortProducts", () => {
     expect(sortProducts(list, "new").map((p) => p.slug)).toEqual(["new", "old"])
   })
 
+  it("puts gifts after flowers in any sort, but keeps sold-out items last", () => {
+    const list = () => [
+      product({ slug: "popular-candy", category: "gifts", isPopular: true, price: 500 }),
+      product({ slug: "plain-roses", category: "roses", price: 2000 }),
+      product({ slug: "sold-out-peony", category: "peonies", price: 900, availability: "out_of_stock" }),
+      product({ slug: "vase", category: "gifts", price: 1200 }),
+    ]
+    expect(sortProducts(list(), "popular").map((p) => p.slug)).toEqual([
+      "plain-roses",
+      "popular-candy",
+      "vase",
+      "sold-out-peony",
+    ])
+    expect(sortProducts(list(), "price-asc").map((p) => p.slug)).toEqual([
+      "plain-roses",
+      "popular-candy",
+      "vase",
+      "sold-out-peony",
+    ])
+  })
+
   it("orders products added on the same day by time", () => {
     const list = [
       product({ slug: "a-morning", addedAt: "2026-06-01T08:00:00.000Z" }),

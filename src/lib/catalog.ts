@@ -1,3 +1,4 @@
+import { isGiftCategory } from "@/config/site"
 import type { Availability, Category, Product } from "@/types/catalog"
 
 /** Category fields the shared catalogue logic needs */
@@ -152,14 +153,16 @@ const sorters: Record<SortValue, (a: Product, b: Product) => number> = {
 }
 
 /**
- * Sorts in place; unavailable items always sink to the end, whatever the sort.
- * Ties fall back to popularity, then slug, so the order never depends on the
- * order rows come back from the database.
+ * Sorts in place. Whatever the sort, unavailable items sink to the end, and gifts
+ * follow the flowers: this is a flower shop, so candles and chocolates never lead a
+ * mixed listing, however popular they are. Ties fall back to popularity, then slug,
+ * so the order never depends on the order rows come back from the database.
  */
 export function sortProducts(items: Product[], sort: SortValue) {
   return items.sort((a, b) => {
     const stock = Number(!isPurchasable(a.availability)) - Number(!isPurchasable(b.availability))
-    return stock || sorters[sort](a, b) || b.popularity - a.popularity || a.slug.localeCompare(b.slug)
+    const gift = Number(isGiftCategory(a.category)) - Number(isGiftCategory(b.category))
+    return stock || gift || sorters[sort](a, b) || b.popularity - a.popularity || a.slug.localeCompare(b.slug)
   })
 }
 
