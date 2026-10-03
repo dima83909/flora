@@ -15,7 +15,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:check": "tsx --conditions=react-server scripts/check-catalog.ts && tsx --conditions=react-server scripts/check-orders.ts && tsx --conditions=react-server scripts/check-admin.ts",
+    "db:check": "tsx --conditions=react-server scripts/check-catalog.ts && tsx --conditions=react-server scripts/check-orders.ts && tsx --conditions=react-server scripts/check-products.ts && tsx --conditions=react-server scripts/check-admin.ts",
     "admin:create": "tsx --conditions=react-server scripts/create-admin.ts",
     "maintenance:cleanup": "tsx --conditions=react-server scripts/cleanup.ts",
     "orders:purge": "tsx --conditions=react-server scripts/purge-orders.ts"
