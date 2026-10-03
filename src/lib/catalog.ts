@@ -136,7 +136,7 @@ export function applyFilters(
     return productMatchesQuery(product, filters.query, categoryNames.get(product.category))
   })
 
-  return sortProducts(result, filters.sort)
+  return sortProducts(result, filters.sort, { search: Boolean(filters.query.trim()) })
 }
 
 /** "Популярне" outranks "Новинка", and a product with both outranks either */
@@ -153,15 +153,19 @@ const sorters: Record<SortValue, (a: Product, b: Product) => number> = {
 }
 
 /**
- * Sorts in place. Whatever the sort, unavailable items sink to the end, and gifts
- * follow the flowers: this is a flower shop, so candles and chocolates never lead a
- * mixed listing, however popular they are. Ties fall back to popularity, then slug,
- * so the order never depends on the order rows come back from the database.
+ * Sorts in place. Whatever the sort, unavailable items sink to the end. In the
+ * popular and new sorts gifts also follow the flowers: this is a flower shop, so
+ * candles and chocolates never lead a mixed listing, however popular they are.
+ * Price sorts and search results keep the plain order, so prices never jump back
+ * and a gift that matches the query is not pushed out of a short result list.
+ * Ties fall back to popularity, then slug, so the order never depends on the
+ * order rows come back from the database.
  */
-export function sortProducts(items: Product[], sort: SortValue) {
+export function sortProducts(items: Product[], sort: SortValue, { search = false } = {}) {
+  const giftsLast = !search && (sort === "popular" || sort === "new")
   return items.sort((a, b) => {
     const stock = Number(!isPurchasable(a.availability)) - Number(!isPurchasable(b.availability))
-    const gift = Number(isGiftCategory(a.category)) - Number(isGiftCategory(b.category))
+    const gift = giftsLast ? Number(isGiftCategory(a.category)) - Number(isGiftCategory(b.category)) : 0
     return stock || gift || sorters[sort](a, b) || b.popularity - a.popularity || a.slug.localeCompare(b.slug)
   })
 }

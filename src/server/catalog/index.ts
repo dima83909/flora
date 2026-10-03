@@ -83,7 +83,7 @@ async function findProducts(filters: ProductFilters): Promise<Product[]> {
     return productMatchesQuery(product, query, row.category.name) ? [product] : []
   })
 
-  return sortProducts(matched, filters.sort ?? DEFAULT_SORT)
+  return sortProducts(matched, filters.sort ?? DEFAULT_SORT, { search: Boolean(query) })
 }
 
 /** Active categories in display order */

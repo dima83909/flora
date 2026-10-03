@@ -13,6 +13,7 @@ import {
   searchProducts,
   sortProducts,
   type CatalogFilters,
+  type SortValue,
 } from "@/lib/catalog"
 import type { Product } from "@/types/catalog"
 
@@ -173,25 +174,37 @@ describe("sortProducts", () => {
     expect(sortProducts(list, "new").map((p) => p.slug)).toEqual(["new", "old"])
   })
 
-  it("puts gifts after flowers in any sort, but keeps sold-out items last", () => {
+  describe("gifts in mixed listings", () => {
     const list = () => [
-      product({ slug: "popular-candy", category: "gifts", isPopular: true, price: 500 }),
-      product({ slug: "plain-roses", category: "roses", price: 2000 }),
+      product({ slug: "popular-candy", category: "gifts", isPopular: true, price: 500, addedAt: "2026-03-01" }),
+      product({ slug: "plain-roses", category: "roses", price: 2000, addedAt: "2026-01-01" }),
       product({ slug: "sold-out-peony", category: "peonies", price: 900, availability: "out_of_stock" }),
-      product({ slug: "vase", category: "gifts", price: 1200 }),
+      product({ slug: "sold-out-candle", category: "gifts", price: 300, availability: "out_of_stock" }),
+      product({ slug: "vase", category: "gifts", price: 1200, addedAt: "2026-02-01" }),
     ]
-    expect(sortProducts(list(), "popular").map((p) => p.slug)).toEqual([
-      "plain-roses",
-      "popular-candy",
-      "vase",
-      "sold-out-peony",
-    ])
-    expect(sortProducts(list(), "price-asc").map((p) => p.slug)).toEqual([
-      "plain-roses",
-      "popular-candy",
-      "vase",
-      "sold-out-peony",
-    ])
+    const order = (sort: SortValue, options?: { search?: boolean }) =>
+      sortProducts(list(), sort, options).map((p) => p.slug)
+
+    it("puts gifts after flowers in the popular and new sorts, sold-out items still last", () => {
+      const expected = ["plain-roses", "popular-candy", "vase", "sold-out-peony", "sold-out-candle"]
+      expect(order("popular")).toEqual(expected)
+      expect(order("new")).toEqual(expected)
+    })
+
+    it("keeps price sorts in price order", () => {
+      expect(order("price-asc")).toEqual(["popular-candy", "vase", "plain-roses", "sold-out-candle", "sold-out-peony"])
+      expect(order("price-desc")).toEqual(["plain-roses", "vase", "popular-candy", "sold-out-peony", "sold-out-candle"])
+    })
+
+    it("does not push gifts down in search results", () => {
+      expect(order("popular", { search: true })).toEqual([
+        "popular-candy",
+        "vase",
+        "plain-roses",
+        "sold-out-candle",
+        "sold-out-peony",
+      ])
+    })
   })
 
   it("orders products added on the same day by time", () => {
@@ -245,6 +258,14 @@ describe("searchProducts", () => {
   it("returns the most popular matches first and honours the limit", () => {
     expect(searchProducts(items, "троянд").map((p) => p.slug)).toEqual(["b", "a"])
     expect(searchProducts(items, "троянд", 1).map((p) => p.slug)).toEqual(["b"])
+  })
+
+  it("does not push a matching gift behind bouquets", () => {
+    const mixed = [
+      product({ slug: "bouquet", name: "Букет", composition: "троянди, шоколад", popularity: 1 }),
+      product({ slug: "chocolates", name: "Шоколад", category: "gifts", popularity: 9 }),
+    ]
+    expect(searchProducts(mixed, "шоколад", 1).map((p) => p.slug)).toEqual(["chocolates"])
   })
 })
 
