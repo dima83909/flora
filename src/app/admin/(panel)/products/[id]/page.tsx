@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react"
 
 import { DeleteProduct } from "@/components/admin/delete-product"
+import { ForgetSearchParams } from "@/components/admin/forget-search-params"
 import { ProductForm } from "@/components/admin/product-form"
 import { ProductImages } from "@/components/admin/product-images"
 import { formatFullDate } from "@/lib/admin-format"
@@ -63,6 +64,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
 
       {created ? (
         <p role="status" className="mt-4 rounded-xl bg-sage/50 px-4 py-3 text-sm text-moss">
+          <ForgetSearchParams />
           Товар створено{onSite ? " і він уже в каталозі на сайті" : ""}. Тепер можна додати фото.
         </p>
       ) : null}

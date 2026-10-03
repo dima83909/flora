@@ -24,10 +24,16 @@ import {
 } from "@/server/catalog"
 import { getDb } from "@/server/db"
 
-// The seed adds per-category care tips and the photographs found on disk to every fixture product
+// The seed adds per-category care tips and the photographs found on disk to every fixture product,
+// and creates it at midnight UTC of its fixture date
 const mockProducts: Product[] = fixtureProducts.map((p) => {
   const images = p.images?.length ? p.images : photosOnDisk(p.slug)
-  return { ...p, careInstructions: careByCategory[p.category] ?? [], ...(images.length ? { images } : {}) }
+  return {
+    ...p,
+    addedAt: new Date(`${p.addedAt}T00:00:00Z`).toISOString(),
+    careInstructions: careByCategory[p.category] ?? [],
+    ...(images.length ? { images } : {}),
+  }
 })
 
 const failures: string[] = []

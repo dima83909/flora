@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { useRef, useState, useTransition } from "react"
 import { ArrowLeftIcon, ArrowRightIcon, ImagePlusIcon, Trash2Icon } from "lucide-react"
 
@@ -12,7 +13,7 @@ import {
   PRODUCT_IMAGES_MAX,
 } from "@/lib/product-images"
 import { cn } from "@/lib/utils"
-import { removeProductImage, reorderProductImages, uploadProductImage } from "@/app/admin/(panel)/products/actions"
+import { removeProductImage, reorderProductImages } from "@/app/admin/(panel)/products/actions"
 
 type ProductImage = { id: string; url: string }
 
@@ -26,8 +27,9 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) 
  * keeps uploads fast and well under the server's request limit.
  */
 async function compress(file: File): Promise<File> {
-  // Applies the EXIF rotation, so portrait phone photos stay upright
-  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" })
+  // Browsers apply the EXIF rotation by default, so portrait phone photos stay upright.
+  // No options on purpose: older engines throw on option values they do not know
+  const bitmap = await createImageBitmap(file)
   const scale = Math.min(1, PRODUCT_IMAGE_MAX_SIDE / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement("canvas")
   canvas.width = Math.round(bitmap.width * scale)
@@ -59,7 +61,21 @@ async function prepare(file: File): Promise<File | string> {
  * The product's gallery. Changes are saved straight away, separately from the
  * product form; the page re-renders with the stored photos after each one.
  */
+/** Sends one photo to the upload route; returns an error message, or null on success */
+async function send(productId: string, file: File): Promise<string | null> {
+  const body = new FormData()
+  body.set("file", file)
+  try {
+    const response = await fetch(`/admin/products/${productId}/photos`, { method: "POST", body })
+    const result = (await response.json().catch(() => null)) as { ok?: boolean; message?: string } | null
+    return result?.ok ? null : (result?.message ?? "не вдалося зберегти фото.")
+  } catch {
+    return "немає зв'язку із сервером."
+  }
+}
+
 export function ProductImages({ productId, images }: { productId: string; images: ProductImage[] }) {
+  const router = useRouter()
   const input = useRef<HTMLInputElement>(null)
   const [progress, setProgress] = useState<string | null>(null)
   const [errors, setErrors] = useState<string[]>([])
@@ -81,16 +97,11 @@ export function ProductImages({ productId, images }: { productId: string; images
         problems.push(`«${file.name}»: ${prepared}.`)
         continue
       }
-      const body = new FormData()
-      body.set("productId", productId)
-      body.set("file", prepared)
-      try {
-        const result = await uploadProductImage(body)
-        if (!result.ok) problems.push(`«${file.name}»: ${result.message}`)
-      } catch {
-        problems.push(`«${file.name}»: немає зв'язку із сервером.`)
-      }
+      const problem = await send(productId, prepared)
+      if (problem) problems.push(`«${file.name}»: ${problem}`)
     }
+    // One refresh for the whole batch shows the stored photos
+    startTransition(() => router.refresh())
     setProgress(null)
     setErrors(problems)
   }

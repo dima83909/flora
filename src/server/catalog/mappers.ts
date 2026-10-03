@@ -51,7 +51,8 @@ export function toStorefrontProduct(product: DbProductWithRelations): Product {
     availability,
     ...(availability === "preorder" && product.leadTimeDays !== null ? { leadDays: product.leadTimeDays } : {}),
     popularity: product.popularity,
-    addedAt: product.createdAt.toISOString().slice(0, 10),
+    // Full timestamp, so products added on the same day still sort newest first
+    addedAt: product.createdAt.toISOString(),
     visual: toVisual(product.illustration),
     ...(images.length ? { images } : {}),
   }

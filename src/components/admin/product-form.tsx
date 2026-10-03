@@ -155,10 +155,14 @@ export function ProductForm({ product, initialValues, categories, featuredElsewh
   // The server's verdict on the last submit stays up only until the form is edited again
   const showServerError = Boolean(state && !state.ok) && JSON.stringify(values) === JSON.stringify(submitted)
 
-  // Leaving the page with unsaved changes asks first (a redirect after creating does not)
+  // Leaving the page with unsaved changes asks first (a redirect after creating does not,
+  // nor does reloading on purpose to get the newer version)
+  const discarding = useRef(false)
   useEffect(() => {
     if (!dirty || pending) return
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    const warn = (event: BeforeUnloadEvent) => {
+      if (!discarding.current) event.preventDefault()
+    }
     window.addEventListener("beforeunload", warn)
     return () => window.removeEventListener("beforeunload", warn)
   }, [dirty, pending])
@@ -444,7 +448,14 @@ export function ProductForm({ product, initialValues, categories, featuredElsewh
                 {state?.stale ? (
                   <>
                     {" "}
-                    <button type="button" onClick={() => window.location.reload()} className="text-ink underline underline-offset-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        discarding.current = true
+                        window.location.reload()
+                      }}
+                      className="text-ink underline underline-offset-4"
+                    >
                       Відкрити актуальну версію
                     </button>
                   </>

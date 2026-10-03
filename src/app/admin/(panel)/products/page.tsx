@@ -46,20 +46,26 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
   await requireAdmin()
 
   const params = await searchParams
-  const categories = await getAdminCategoryOptions()
   const rawCategory = first(params.category)
   const rawAvailability = first(params.availability)
   const rawVisibility = first(params.visibility)
   const rawPage = first(params.page) ?? ""
   const filters: Filters = {
     query: (first(params.q) ?? "").trim().slice(0, 100),
-    categoryId: categories.some((c) => c.id === rawCategory) ? rawCategory : undefined,
+    categoryId: rawCategory && /^[a-z0-9]{1,100}$/i.test(rawCategory) ? rawCategory : undefined,
     availability: isProductAvailability(rawAvailability) ? rawAvailability : undefined,
     visibility: isVisibility(rawVisibility) ? rawVisibility : undefined,
     page: /^[1-9]\d{0,5}$/.test(rawPage) ? Number(rawPage) : 1,
   }
 
-  const { products, total, pageCount } = await listAdminProducts(filters)
+  const [categories, { products, total, pageCount }] = await Promise.all([
+    getAdminCategoryOptions(),
+    listAdminProducts(filters),
+  ])
+  // A deleted category in an old link would hide every product; show them all instead
+  if (filters.categoryId && !categories.some((c) => c.id === filters.categoryId)) {
+    redirect(productsHref({ ...filters, categoryId: undefined, page: 1 }))
+  }
   // A page past the end (products were filtered out, or the link is old) shows the last one
   if (filters.page > pageCount) redirect(productsHref({ ...filters, page: pageCount }))
 

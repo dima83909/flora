@@ -13,6 +13,7 @@ import {
 } from "@/lib/catalog"
 import { isGiftCategory } from "@/config/site"
 import { fromMinor, toMinor } from "@/lib/money"
+import { HOMEPAGE_FEATURED_LIMIT } from "@/lib/product-schema"
 import {
   toStorefrontCategory,
   toStorefrontProduct,
@@ -132,7 +133,7 @@ export async function searchProducts(query: string, limit?: number): Promise<Pro
 }
 
 /** Products flagged for the homepage, in the catalogue's default order */
-export const getFeaturedProducts = cache(async (limit = 4): Promise<Product[]> => {
+export const getFeaturedProducts = cache(async (limit = HOMEPAGE_FEATURED_LIMIT): Promise<Product[]> => {
   const rows = await getDb().product.findMany({
     where: { ...publishedProduct, isFeatured: true },
     include: productInclude,

@@ -21,7 +21,7 @@ export const PRODUCT_IMAGE_MAX_SIDE = 1600
 
 /**
  * Upper bound for one photo as sent to the server. Compressed photos are far smaller;
- * the server action body limit (next.config.ts) leaves room for it plus form overhead.
+ * the upload route adds room for form overhead and stays under Vercel's 4.5 MB limit.
  */
 export const PRODUCT_IMAGE_MAX_BYTES = 3.5 * 1024 * 1024
 

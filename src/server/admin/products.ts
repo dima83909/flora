@@ -1,6 +1,7 @@
 import "server-only"
 
 import { revalidatePath } from "next/cache"
+import { cache } from "react"
 
 import { requireAdmin } from "@/server/admin/auth"
 import { addProductImage, deleteProductImage, reorderProductImages } from "@/server/catalog/images"
@@ -44,10 +45,11 @@ export async function listAdminProducts(filters: Omit<AdminProductSearch, "skip"
   return { products, total, pageCount: Math.max(1, Math.ceil(total / PRODUCTS_PAGE_SIZE)) }
 }
 
-export async function getAdminProduct(id: string) {
+/** Deduplicated within one render: the edit page's metadata and body both ask for it */
+export const getAdminProduct = cache(async (id: string) => {
   await requireAdmin()
   return getProductById(id)
-}
+})
 
 export async function getAdminCategoryOptions() {
   await requireAdmin()
@@ -90,13 +92,13 @@ export async function addAdminProductImage(productId: string, file: unknown) {
 export async function deleteAdminProductImage(productId: string, imageId: string) {
   await requireAdmin()
   const deleted = await deleteProductImage(productId, imageId)
-  refreshStorefront()
+  if (deleted) refreshStorefront()
   return deleted
 }
 
 export async function reorderAdminProductImages(productId: string, imageIds: string[]) {
   await requireAdmin()
   const reordered = await reorderProductImages(productId, imageIds)
-  refreshStorefront()
+  if (reordered) refreshStorefront()
   return reordered
 }

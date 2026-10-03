@@ -173,6 +173,15 @@ describe("sortProducts", () => {
     expect(sortProducts(list, "new").map((p) => p.slug)).toEqual(["new", "old"])
   })
 
+  it("orders products added on the same day by time", () => {
+    const list = [
+      product({ slug: "a-morning", addedAt: "2026-06-01T08:00:00.000Z" }),
+      product({ slug: "b-evening", addedAt: "2026-06-01T18:00:00.000Z" }),
+    ]
+    expect(sortProducts([...list], "new").map((p) => p.slug)).toEqual(["b-evening", "a-morning"])
+    expect(sortProducts([...list], "popular").map((p) => p.slug)).toEqual(["b-evening", "a-morning"])
+  })
+
   it("puts popular, then new, then the newest products first by default", () => {
     const list = [
       product({ slug: "plain-old", addedAt: "2026-01-01", popularity: 99 }),

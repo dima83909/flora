@@ -35,7 +35,7 @@ export type Product = {
   leadDays?: number
   /** Tie-breaker in sorting for products added on the same day; higher first */
   popularity: number
-  /** ISO date the product was added; drives the "new" sort */
+  /** ISO timestamp the product was added (seed fixtures give a date only); drives the "new" and default sorts */
   addedAt: string
   visual: ProductVisual
   /**

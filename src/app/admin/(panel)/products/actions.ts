@@ -5,7 +5,6 @@ import { redirect } from "next/navigation"
 import type { ProductField } from "@/lib/product-schema"
 import { requireAdmin } from "@/server/admin/auth"
 import {
-  addAdminProductImage,
   createAdminProduct,
   deleteAdminProduct,
   deleteAdminProductImage,
@@ -86,23 +85,6 @@ export async function deleteProduct(_previous: ProductFormState, formData: unkno
 export type ImageActionResult = { ok: boolean; message?: string }
 
 const STALE_PHOTOS = "Фото товару щойно змінилися. Сторінку оновлено, спробуйте ще раз."
-
-/** Adds one photo. Called once per file, so a failure affects only that file */
-export async function uploadProductImage(formData: unknown): Promise<ImageActionResult> {
-  await requireAdmin()
-  if (!(formData instanceof FormData)) return BAD_REQUEST
-  const productId = formData.get("productId")
-  if (!isId(productId)) return BAD_REQUEST
-
-  try {
-    const result = await addAdminProductImage(productId, formData.get("file"))
-    if (result.ok) return { ok: true }
-    return { ok: false, message: result.reason === "not_found" ? "Товар уже видалено." : result.message }
-  } catch (error) {
-    console.error("Failed to upload a product photo", error)
-    return { ok: false, message: "Не вдалося зберегти фото. Спробуйте ще раз за хвилину." }
-  }
-}
 
 export async function removeProductImage(productId: unknown, imageId: unknown): Promise<ImageActionResult> {
   await requireAdmin()

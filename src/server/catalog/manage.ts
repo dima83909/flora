@@ -89,10 +89,15 @@ export function getCategoryOptions() {
   })
 }
 
-/** Published products flagged for the homepage, optionally leaving one out */
+/** Products the homepage can show (published, in a visible category), optionally leaving one out */
 export function countFeaturedProducts(exceptId?: string) {
   return getDb().product.count({
-    where: { isFeatured: true, isActive: true, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    where: {
+      isFeatured: true,
+      isActive: true,
+      category: { isActive: true },
+      ...(exceptId ? { id: { not: exceptId } } : {}),
+    },
   })
 }
 
