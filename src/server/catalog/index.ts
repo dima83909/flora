@@ -65,10 +65,8 @@ function buildWhere(filters: ProductFilters): Prisma.ProductWhereInput {
           },
         }
       : {}),
-    // "In stock" means ready now: not preorder, not sold out, and tracked stock above zero
-    ...(filters.inStockOnly
-      ? { availability: "IN_STOCK", OR: [{ stock: null }, { stock: { gt: 0 } }] }
-      : {}),
+    // "In stock" means ready now: not preorder and not sold out
+    ...(filters.inStockOnly ? { availability: { in: ["IN_STOCK", "LOW_STOCK"] } } : {}),
   }
 }
 
@@ -118,7 +116,7 @@ export const getFeaturedCategories = cache(async (): Promise<CategoryWithPrice[]
   })
 })
 
-/** All published products, most popular first */
+/** All published products in the default order */
 export const getProducts = cache((): Promise<Product[]> => findProducts({}))
 
 /** Catalogue listing with the same filters and sorting as /bouquets */
@@ -133,15 +131,13 @@ export async function searchProducts(query: string, limit?: number): Promise<Pro
   return limit ? found.slice(0, limit) : found
 }
 
-/** Products flagged for the homepage, most popular first */
+/** Products flagged for the homepage, in the catalogue's default order */
 export const getFeaturedProducts = cache(async (limit = 4): Promise<Product[]> => {
   const rows = await getDb().product.findMany({
     where: { ...publishedProduct, isFeatured: true },
     include: productInclude,
-    orderBy: { popularity: "desc" },
-    take: limit,
   })
-  return rows.map(toStorefrontProduct)
+  return sortProducts(rows.map(toStorefrontProduct), DEFAULT_SORT).slice(0, limit)
 })
 
 export const getProductBySlug = cache(async (slug: string): Promise<Product | null> => {
@@ -152,15 +148,13 @@ export const getProductBySlug = cache(async (slug: string): Promise<Product | nu
   return row ? toStorefrontProduct(row) : null
 })
 
-/** Same category first, then the most popular items from other categories except gifts */
+/** Same category first, then other categories except gifts, each in the default order */
 export async function getRelatedProducts(product: Product, limit = 4): Promise<Product[]> {
   const others = (await getProducts()).filter(
     (p) => p.slug !== product.slug && isPurchasable(p.availability)
   )
   const sameCategory = others.filter((p) => p.category === product.category)
-  const rest = others
-    .filter((p) => p.category !== product.category && !isGiftCategory(p.category))
-    .sort((a, b) => b.popularity - a.popularity)
+  const rest = others.filter((p) => p.category !== product.category && !isGiftCategory(p.category))
   return [...sameCategory, ...rest].slice(0, limit)
 }
 

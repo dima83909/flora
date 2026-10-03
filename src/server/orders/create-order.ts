@@ -2,7 +2,6 @@ import "server-only"
 
 import { MAX_QUANTITY } from "@/lib/cart-limits"
 import { customerFieldErrors, orderInputSchema, type CustomerField } from "@/lib/order-schema"
-import { toStorefrontAvailability } from "@/server/catalog/availability"
 import { getDb } from "@/server/db"
 import { isOrderRateLimited, purgeOldOrderAttempts, recordPlacedOrder } from "@/server/orders/rate-limit"
 
@@ -10,9 +9,7 @@ export type UnavailableItem = {
   slug: string
   /** Product name when it still exists in the catalogue */
   name?: string
-  problem: "missing" | "out_of_stock" | "insufficient_stock"
-  /** Units that can still be ordered, for insufficient stock */
-  available?: number
+  problem: "missing" | "out_of_stock"
 }
 
 export type CreateOrderResult =
@@ -83,8 +80,6 @@ export async function createGuestOrder(
           composition: true,
           priceMinor: true,
           availability: true,
-          stock: true,
-          leadTimeDays: true,
         },
       })
       const bySlug = new Map(products.map((product) => [product.slug, product]))
@@ -96,12 +91,8 @@ export async function createGuestOrder(
           problems.push({ slug, problem: "missing" })
           return []
         }
-        if (toStorefrontAvailability(product) === "out_of_stock") {
+        if (product.availability === "OUT_OF_STOCK") {
           problems.push({ slug, name: product.name, problem: "out_of_stock" })
-          return []
-        }
-        if (product.stock !== null && quantity > product.stock) {
-          problems.push({ slug, name: product.name, problem: "insufficient_stock", available: product.stock })
           return []
         }
         return [
@@ -140,7 +131,7 @@ export async function createGuestOrder(
       return {
         ok: false,
         reason: "unavailable",
-        message: "Деякі товари в кошику зараз недоступні. Приберіть їх або змініть кількість.",
+        message: "Деякі товари в кошику зараз недоступні. Приберіть їх, щоб оформити замовлення.",
         items: error.items,
       }
     }

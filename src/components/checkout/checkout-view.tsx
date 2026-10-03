@@ -164,34 +164,17 @@ export function CheckoutView() {
                     </p>
                     {unavailableNow ? (
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                        <span className="text-rose">
-                          {problem?.problem === "insufficient_stock"
-                            ? `Доступно лише ${problem.available} шт.`
-                            : "Зараз немає в наявності"}
-                        </span>
-                        {problem?.problem === "insufficient_stock" && problem.available ? (
-                          <button
-                            type="button"
-                            className="text-ink underline underline-offset-4"
-                            onClick={() => {
-                              cartActions.setQuantity(slug, problem.available!)
-                              setUnavailable((items) => items.filter((item) => item.slug !== slug))
-                            }}
-                          >
-                            Змінити на {problem.available}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="text-ink underline underline-offset-4"
-                            onClick={() => {
-                              cartActions.remove(slug)
-                              setUnavailable((items) => items.filter((item) => item.slug !== slug))
-                            }}
-                          >
-                            Прибрати з кошика
-                          </button>
-                        )}
+                        <span className="text-rose">Зараз немає в наявності</span>
+                        <button
+                          type="button"
+                          className="text-ink underline underline-offset-4"
+                          onClick={() => {
+                            cartActions.remove(slug)
+                            setUnavailable((items) => items.filter((item) => item.slug !== slug))
+                          }}
+                        >
+                          Прибрати з кошика
+                        </button>
                       </div>
                     ) : null}
                   </div>

@@ -12,7 +12,7 @@ import { isDeepStrictEqual } from "node:util"
 import { careByCategory } from "../prisma/seed-data/care"
 import { categories as mockCategories, products as fixtureProducts } from "../prisma/seed-data/catalog"
 import { photosOnDisk } from "../prisma/seed-data/photos"
-import { applyFilters, sortOptions, priceRanges, type CatalogFilters } from "@/lib/catalog"
+import { applyFilters, DEFAULT_SORT, sortOptions, sortProducts, priceRanges, type CatalogFilters } from "@/lib/catalog"
 import type { Product } from "@/types/catalog"
 import {
   filterProducts,
@@ -56,10 +56,10 @@ async function main() {
     const fromDb = await getProductBySlug(mock.slug)
     check(isDeepStrictEqual(fromDb, mock), `product "${mock.slug}" differs from mock data`)
   }
-  // Related: purchasable items of the same category, then other non-gift categories, each by popularity
-  const byPopularity = [...mockProducts].sort((a, b) => b.popularity - a.popularity)
+  // Related: purchasable items of the same category, then other non-gift categories, each in the default order
+  const byDefaultSort = sortProducts([...mockProducts], DEFAULT_SORT)
   for (const mock of mockProducts) {
-    const others = byPopularity.filter((p) => p.slug !== mock.slug && p.availability !== "out_of_stock")
+    const others = byDefaultSort.filter((p) => p.slug !== mock.slug && p.availability !== "out_of_stock")
     const expected = slugs([
       ...others.filter((p) => p.category === mock.category),
       ...others.filter((p) => p.category !== mock.category && p.category !== "gifts"),
@@ -86,6 +86,19 @@ async function main() {
 
   const search = await searchProducts("півонії", 2)
   check(search.length === 2, `search limit should return 2 items, got ${search.length}`)
+
+  // "Running low" is set by a manager; no fixture has it, so one product is marked and restored
+  const db = getDb()
+  const lowSlug = "quiet-harbour"
+  const before = await db.product.findUniqueOrThrow({ where: { slug: lowSlug }, select: { availability: true } })
+  try {
+    await db.product.update({ where: { slug: lowSlug }, data: { availability: "LOW_STOCK" } })
+    check((await getProductBySlug(lowSlug))?.availability === "low_stock", "LOW_STOCK should read as low_stock")
+    const ready = slugs(await filterProducts({ ...baseFilters, inStockOnly: true }))
+    check(ready.includes(lowSlug), "a low-stock product is still in stock for the filter")
+  } finally {
+    await db.product.update({ where: { slug: lowSlug }, data: { availability: before.availability } })
+  }
 
   console.log(
     `Checked ${categories.length} categories, ${products.length} products and ${scenarios.length} filter scenarios.`

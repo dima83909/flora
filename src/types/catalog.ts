@@ -3,8 +3,6 @@ import type { GiftArtVariant } from "@/components/brand/gift-art"
 
 export type Availability = "in_stock" | "low_stock" | "preorder" | "out_of_stock"
 
-export type ProductLabel = "new" | "popular"
-
 /** Placeholder illustration until product photography is available */
 export type ProductVisual =
   | { kind: "bouquet"; variant: FlowerArtVariant; container?: FlowerArtContainer }
@@ -28,11 +26,14 @@ export type Product = {
   price: number
   /** Price before discount; presence marks the product as on sale */
   oldPrice?: number
-  label?: ProductLabel
+  /** "Новинка" badge, set by a manager */
+  isNew?: boolean
+  /** "Популярне" badge, set by a manager */
+  isPopular?: boolean
   availability: Availability
   /** Days needed to source flowers, for preorder items */
   leadDays?: number
-  /** Higher is more popular; drives the default sort */
+  /** Tie-breaker in sorting for products added on the same day; higher first */
   popularity: number
   /** ISO date the product was added; drives the "new" sort */
   addedAt: string

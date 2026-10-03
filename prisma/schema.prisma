@@ -23,10 +23,12 @@ datasource db {
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-/// Stock policy of a product. "Low stock" is derived from `stock`, not stored.
+/// Stock status of a product, set by a manager. Quantities are not tracked.
 enum ProductAvailability {
   /// Can be assembled from flowers on hand; ships within the same-day window
   IN_STOCK
+  /// Still orderable, but only a few are left
+  LOW_STOCK
   /// Flowers are sourced after the order; see `leadTimeDays`
   PREORDER
   /// Temporarily unavailable; still visible in the catalogue
@@ -93,14 +95,15 @@ model Product {
   /// Price before discount; set only when the product is on sale
   compareAtPriceMinor Int?                @map("compare_at_price_minor")
   availability        ProductAvailability @default(IN_STOCK)
-  /// Units on hand; null means not tracked (assembled to order from daily stock)
-  stock               Int?
   /// Days needed to source flowers; required when availability is PREORDER
   leadTimeDays        Int?                @map("lead_time_days")
+  /// Shown in the homepage "popular bouquets" block
   isFeatured          Boolean             @default(false) @map("is_featured")
+  /// "Популярне" badge; such products lead the default sort
   isPopular           Boolean             @default(false) @map("is_popular")
+  /// "Новинка" badge; such products follow popular ones in the default sort
   isNew               Boolean             @default(false) @map("is_new")
-  /// Ranking for the default "popular" sort; higher first
+  /// Tie-breaker for products added on the same day; higher first. Set by the seed only
   popularity          Int                 @default(0)
   /// Unpublished products are hidden from the storefront
   isActive            Boolean             @default(true) @map("is_active")

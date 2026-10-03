@@ -173,6 +173,25 @@ describe("sortProducts", () => {
     expect(sortProducts(list, "new").map((p) => p.slug)).toEqual(["new", "old"])
   })
 
+  it("puts popular, then new, then the newest products first by default", () => {
+    const list = [
+      product({ slug: "plain-old", addedAt: "2026-01-01", popularity: 99 }),
+      product({ slug: "plain-recent", addedAt: "2026-06-01" }),
+      product({ slug: "new", isNew: true, addedAt: "2026-02-01" }),
+      product({ slug: "popular", isPopular: true, addedAt: "2026-01-01" }),
+      product({ slug: "popular-new", isPopular: true, isNew: true, addedAt: "2026-01-01" }),
+      product({ slug: "sold-out-popular", isPopular: true, availability: "out_of_stock" }),
+    ]
+    expect(sortProducts(list, "popular").map((p) => p.slug)).toEqual([
+      "popular-new",
+      "popular",
+      "new",
+      "plain-recent",
+      "plain-old",
+      "sold-out-popular",
+    ])
+  })
+
   it("breaks ties by popularity, then slug, regardless of input order", () => {
     const a = product({ slug: "a", price: 10, popularity: 1 })
     const b = product({ slug: "b", price: 10, popularity: 1 })

@@ -138,8 +138,14 @@ export function applyFilters(
   return sortProducts(result, filters.sort)
 }
 
+/** "Популярне" outranks "Новинка", and a product with both outranks either */
+function badgeRank(product: Product) {
+  return (product.isPopular ? 2 : 0) + (product.isNew ? 1 : 0)
+}
+
 const sorters: Record<SortValue, (a: Product, b: Product) => number> = {
-  popular: (a, b) => b.popularity - a.popularity,
+  // Manager-set badges first, then the newest products
+  popular: (a, b) => badgeRank(b) - badgeRank(a) || b.addedAt.localeCompare(a.addedAt),
   new: (a, b) => b.addedAt.localeCompare(a.addedAt),
   "price-asc": (a, b) => a.price - b.price,
   "price-desc": (a, b) => b.price - a.price,
@@ -191,7 +197,7 @@ export function availabilityText(product: Pick<Product, "availability" | "leadDa
     case "in_stock":
       return "В наявності"
     case "low_stock":
-      return "Залишилось кілька штук"
+      return "Закінчується"
     case "preorder":
       // The lead time is not shown until real supply terms are confirmed
       return "Під замовлення"

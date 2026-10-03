@@ -1,37 +1,26 @@
 import type { ProductAvailability } from "@/generated/prisma/enums"
 import type { Availability } from "@/types/catalog"
 
-/** At or below this many tracked units the storefront shows "only a few left" */
-export const LOW_STOCK_THRESHOLD = 3
-
-type StockFields = {
-  availability: ProductAvailability
-  stock: number | null
-  leadTimeDays: number | null
+const toStorefront: Record<ProductAvailability, Availability> = {
+  IN_STOCK: "in_stock",
+  LOW_STOCK: "low_stock",
+  PREORDER: "preorder",
+  OUT_OF_STOCK: "out_of_stock",
 }
 
-/** Database stock policy → storefront availability */
-export function toStorefrontAvailability({ availability, stock }: StockFields): Availability {
-  if (availability === "OUT_OF_STOCK") return "out_of_stock"
-  if (availability === "PREORDER") return "preorder"
-  if (stock === null) return "in_stock"
-  if (stock === 0) return "out_of_stock"
-  return stock <= LOW_STOCK_THRESHOLD ? "low_stock" : "in_stock"
+/** Database availability → storefront availability */
+export function toStorefrontAvailability(availability: ProductAvailability): Availability {
+  return toStorefront[availability]
 }
 
-/**
- * Storefront availability → database stock policy. Used by the seed: mock data only
- * says "low stock", so it becomes a tracked stock at the threshold.
- */
-export function toStockFields(availability: Availability, leadDays?: number): StockFields {
-  switch (availability) {
-    case "in_stock":
-      return { availability: "IN_STOCK", stock: null, leadTimeDays: null }
-    case "low_stock":
-      return { availability: "IN_STOCK", stock: LOW_STOCK_THRESHOLD, leadTimeDays: null }
-    case "preorder":
-      return { availability: "PREORDER", stock: null, leadTimeDays: leadDays ?? 2 }
-    case "out_of_stock":
-      return { availability: "OUT_OF_STOCK", stock: 0, leadTimeDays: null }
-  }
+const toDb: Record<Availability, ProductAvailability> = {
+  in_stock: "IN_STOCK",
+  low_stock: "LOW_STOCK",
+  preorder: "PREORDER",
+  out_of_stock: "OUT_OF_STOCK",
+}
+
+/** Storefront availability → database availability */
+export function toDbAvailability(availability: Availability): ProductAvailability {
+  return toDb[availability]
 }

@@ -7,13 +7,14 @@
  */
 import "dotenv/config"
 
+import type { ProductAvailability } from "@/generated/prisma/enums"
 import { createGuestOrder, type CreateOrderResult } from "@/server/orders/create-order"
 import { getDb } from "@/server/db"
 
 const db = getDb()
 const failures: string[] = []
 const created: number[] = []
-let stockBefore: number | null | undefined
+let availabilityBefore: ProductAvailability | undefined
 const check = (ok: boolean, message: string) => {
   if (!ok) failures.push(message)
 }
@@ -29,7 +30,7 @@ async function place(input: unknown, options?: { ip?: string | null }): Promise<
 
 async function main() {
   const prices = new Map(
-    (await db.product.findMany({ select: { slug: true, priceMinor: true, stock: true } })).map((p) => [p.slug, p])
+    (await db.product.findMany({ select: { slug: true, priceMinor: true, availability: true } })).map((p) => [p.slug, p])
   )
   const ordersBefore = await db.order.count()
 
@@ -93,26 +94,26 @@ async function main() {
 
   // 4. Availability is checked on the server, and nothing is written when it fails
   const countBefore = await db.order.count()
-  // The catalogue has no tracked stock of its own, so the check sets one and restores it afterwards
-  stockBefore = prices.get("berry-sorbet")!.stock
-  await db.product.update({ where: { slug: "berry-sorbet" }, data: { stock: 3 } })
   const unavailable = await place({
     customer,
     items: [
       { slug: "quiet-harbour", quantity: 1 },
       { slug: "no-such-product", quantity: 1 },
       { slug: "white-peony", quantity: 1 },
-      { slug: "berry-sorbet", quantity: 4 },
     ],
   })
   const problems = !unavailable.ok && unavailable.reason === "unavailable" ? unavailable.items : []
   check(problems.some((p) => p.slug === "no-such-product" && p.problem === "missing"), "missing product not reported")
   check(problems.some((p) => p.slug === "white-peony" && p.problem === "out_of_stock"), "out-of-stock product not reported")
-  check(
-    problems.some((p) => p.slug === "berry-sorbet" && p.problem === "insufficient_stock" && p.available === 3),
-    "insufficient stock not reported"
-  )
+  check(problems.length === 2, `only the missing and sold-out items should be reported: ${JSON.stringify(problems)}`)
   check((await db.order.count()) === countBefore, "a rejected order must not be written")
+
+  // "Running low" is a label only: quantities are not tracked, so any quantity can be ordered.
+  // The catalogue has no such product, so the check marks one and restores it afterwards
+  availabilityBefore = prices.get("berry-sorbet")!.availability
+  await db.product.update({ where: { slug: "berry-sorbet" }, data: { availability: "LOW_STOCK" } })
+  const lowStock = await place({ customer, items: [{ slug: "berry-sorbet", quantity: 10 }] })
+  check(lowStock.ok, `low-stock items can be ordered in any quantity: ${JSON.stringify(lowStock)}`)
 
   const preorder = await place({ customer, items: [{ slug: "pink-peony", quantity: 1 }] })
   check(preorder.ok, "preorder items can be ordered")
@@ -152,7 +153,7 @@ async function main() {
     "a placed order should be recorded with its address"
   )
 
-  console.log(`Checked guest orders: ${invalid.length + 5} scenarios, ${created.length} test orders created.`)
+  console.log(`Checked guest orders: ${invalid.length + 6} scenarios, ${created.length} test orders created.`)
   check((await db.order.count()) === ordersBefore + created.length, "unexpected orders were created")
 }
 
@@ -164,7 +165,9 @@ main()
     await db.orderAttempt.deleteMany({ where: { createdAt: { gte: startedAt } } })
     await db.orderAttempt.deleteMany({ where: { phone: { startsWith: "+38050999" } } })
     if (created.length) await db.order.deleteMany({ where: { number: { in: created } } })
-    if (stockBefore !== undefined) await db.product.update({ where: { slug: "berry-sorbet" }, data: { stock: stockBefore } })
+    if (availabilityBefore !== undefined) {
+      await db.product.update({ where: { slug: "berry-sorbet" }, data: { availability: availabilityBefore } })
+    }
     if (failures.length) {
       console.error(`\n${failures.length} problem(s):\n- ${failures.join("\n- ")}`)
       process.exitCode = 1

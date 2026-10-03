@@ -33,8 +33,7 @@ export function toStorefrontCategory(category: DbCategory): Category {
 
 export function toStorefrontProduct(product: DbProductWithRelations): Product {
   const images = [...product.images].sort((a, b) => a.sortOrder - b.sortOrder).map((image) => image.url)
-  const label = product.isNew ? "new" : product.isPopular ? "popular" : undefined
-  const availability = toStorefrontAvailability(product)
+  const availability = toStorefrontAvailability(product.availability)
 
   return {
     slug: product.slug,
@@ -47,7 +46,8 @@ export function toStorefrontProduct(product: DbProductWithRelations): Product {
     size: product.size ?? "",
     price: fromMinor(product.priceMinor),
     ...(product.compareAtPriceMinor !== null ? { oldPrice: fromMinor(product.compareAtPriceMinor) } : {}),
-    ...(label ? { label } : {}),
+    ...(product.isNew ? { isNew: true } : {}),
+    ...(product.isPopular ? { isPopular: true } : {}),
     availability,
     ...(availability === "preorder" && product.leadTimeDays !== null ? { leadDays: product.leadTimeDays } : {}),
     popularity: product.popularity,
