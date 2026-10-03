@@ -9,6 +9,7 @@ import {
   type ProductFormData,
 } from "@/lib/product-schema"
 import { slugify } from "@/lib/slug"
+import { blobStorage, removeStoredFiles, type ImageStorage } from "@/server/catalog/images"
 import { getDb } from "@/server/db"
 
 /*
@@ -183,12 +184,20 @@ export async function updateProduct(id: string, expectedUpdatedAt: Date, input: 
 export type ProductChangeResult = { ok: true; slug: string } | { ok: false; reason: "not_found" }
 
 /**
- * Permanently deletes a product and its photo records. Past orders keep their
- * snapshot of it; their link to the product becomes empty (ON DELETE SET NULL).
+ * Permanently deletes a product, its photo records and the uploaded photo files.
+ * Past orders keep their snapshot of it; their link to the product becomes empty
+ * (ON DELETE SET NULL).
  */
-export async function deleteProduct(id: string): Promise<ProductChangeResult> {
+export async function deleteProduct(id: string, storage: ImageStorage = blobStorage): Promise<ProductChangeResult> {
   try {
-    const product = await getDb().product.delete({ where: { id }, select: { slug: true } })
+    const product = await getDb().product.delete({
+      where: { id },
+      select: { slug: true, images: { select: { url: true } } },
+    })
+    await removeStoredFiles(
+      product.images.map((image) => image.url),
+      storage
+    )
     return { ok: true, slug: product.slug }
   } catch (error) {
     if (isNotFound(error)) return { ok: false, reason: "not_found" }

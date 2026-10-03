@@ -30,6 +30,8 @@ type ProductFormProps = {
   categories: { id: string; name: string; isActive: boolean }[]
   /** Other published products flagged for the homepage */
   featuredElsewhere: number
+  /** Cards at the top of the main column, outside the form (photos are saved on their own) */
+  media?: React.ReactNode
   /** Extra cards at the end of the side column, outside the form (e.g. deletion, which is a form of its own) */
   aside?: React.ReactNode
 }
@@ -134,7 +136,7 @@ const FIELD_ORDER: ProductField[] = [
  * The fields are controlled, so the <form> only wraps the save bar: that keeps other
  * forms (deletion) out of it, and pressing Enter in a field does not save by accident.
  */
-export function ProductForm({ product, initialValues, categories, featuredElsewhere, aside }: ProductFormProps) {
+export function ProductForm({ product, initialValues, categories, featuredElsewhere, media, aside }: ProductFormProps) {
   const [state, dispatch, pending] = useActionState(saveProduct, null)
   const [values, setValues] = useState(initialValues)
   const [saved, setSaved] = useState(initialValues)
@@ -206,6 +208,7 @@ export function ProductForm({ product, initialValues, categories, featuredElsewh
     <div className="pb-24">
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-5">
+          {media}
           <Card title="Основне">
             <Field name="name" label="Назва" error={errors.name}>
               <Input

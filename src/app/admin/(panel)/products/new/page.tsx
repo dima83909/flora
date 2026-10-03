@@ -24,7 +24,17 @@ export default async function NewProductPage() {
         Адреса сторінки на сайті складеться з назви латиницею і після створення не змінюватиметься.
       </p>
       <div className="mt-6">
-        <ProductForm initialValues={EMPTY_PRODUCT_FORM} categories={categories} featuredElsewhere={featured} />
+        <ProductForm
+          initialValues={EMPTY_PRODUCT_FORM}
+          categories={categories}
+          featuredElsewhere={featured}
+          media={
+            <section className="rounded-2xl border border-dashed bg-card/60 p-5 text-sm text-ink-soft sm:p-6">
+              <h2 className="font-sans text-base font-medium text-ink">Фото</h2>
+              <p className="mt-1">Фото можна буде додати одразу після створення товару.</p>
+            </section>
+          }
+        />
       </div>
     </>
   )

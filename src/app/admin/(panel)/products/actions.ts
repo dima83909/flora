@@ -4,7 +4,14 @@ import { redirect } from "next/navigation"
 
 import type { ProductField } from "@/lib/product-schema"
 import { requireAdmin } from "@/server/admin/auth"
-import { createAdminProduct, deleteAdminProduct, updateAdminProduct } from "@/server/admin/products"
+import {
+  addAdminProductImage,
+  createAdminProduct,
+  deleteAdminProduct,
+  deleteAdminProductImage,
+  reorderAdminProductImages,
+  updateAdminProduct,
+} from "@/server/admin/products"
 
 /*
  * Server actions are public HTTP endpoints: anyone can POST to them with any
@@ -74,4 +81,40 @@ export async function deleteProduct(_previous: ProductFormState, formData: unkno
   const result = await deleteAdminProduct(id)
   if (!result.ok) return { ok: false, message: "Товар уже видалено." }
   redirect("/admin/products")
+}
+
+export type ImageActionResult = { ok: boolean; message?: string }
+
+const STALE_PHOTOS = "Фото товару щойно змінилися. Сторінку оновлено, спробуйте ще раз."
+
+/** Adds one photo. Called once per file, so a failure affects only that file */
+export async function uploadProductImage(formData: unknown): Promise<ImageActionResult> {
+  await requireAdmin()
+  if (!(formData instanceof FormData)) return BAD_REQUEST
+  const productId = formData.get("productId")
+  if (!isId(productId)) return BAD_REQUEST
+
+  try {
+    const result = await addAdminProductImage(productId, formData.get("file"))
+    if (result.ok) return { ok: true }
+    return { ok: false, message: result.reason === "not_found" ? "Товар уже видалено." : result.message }
+  } catch (error) {
+    console.error("Failed to upload a product photo", error)
+    return { ok: false, message: "Не вдалося зберегти фото. Спробуйте ще раз за хвилину." }
+  }
+}
+
+export async function removeProductImage(productId: unknown, imageId: unknown): Promise<ImageActionResult> {
+  await requireAdmin()
+  if (!isId(productId) || !isId(imageId)) return BAD_REQUEST
+  const deleted = await deleteAdminProductImage(productId, imageId)
+  return deleted ? { ok: true } : { ok: false, message: STALE_PHOTOS }
+}
+
+/** Saves the gallery order; the first photo is the one on product cards */
+export async function reorderProductImages(productId: unknown, imageIds: unknown): Promise<ImageActionResult> {
+  await requireAdmin()
+  if (!isId(productId) || !Array.isArray(imageIds) || imageIds.length > 100 || !imageIds.every(isId)) return BAD_REQUEST
+  const reordered = await reorderAdminProductImages(productId, imageIds)
+  return reordered ? { ok: true } : { ok: false, message: STALE_PHOTOS }
 }

@@ -18,6 +18,17 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  images: {
+    // Product photos uploaded in the admin panel live in a public Vercel Blob store
+    remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com", pathname: "/products/**" }],
+  },
+  experimental: {
+    serverActions: {
+      // One compressed product photo per request (PRODUCT_IMAGE_MAX_BYTES) plus form overhead;
+      // Vercel functions accept at most 4.5 MB
+      bodySizeLimit: "4mb",
+    },
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }]
   },

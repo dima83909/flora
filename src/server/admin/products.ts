@@ -3,6 +3,7 @@ import "server-only"
 import { revalidatePath } from "next/cache"
 
 import { requireAdmin } from "@/server/admin/auth"
+import { addProductImage, deleteProductImage, reorderProductImages } from "@/server/catalog/images"
 import {
   countFeaturedProducts,
   createProduct,
@@ -77,4 +78,25 @@ export async function deleteAdminProduct(id: string) {
   const result = await deleteProduct(id)
   if (result.ok) refreshStorefront()
   return result
+}
+
+export async function addAdminProductImage(productId: string, file: unknown) {
+  await requireAdmin()
+  const result = await addProductImage(productId, file)
+  if (result.ok) refreshStorefront()
+  return result
+}
+
+export async function deleteAdminProductImage(productId: string, imageId: string) {
+  await requireAdmin()
+  const deleted = await deleteProductImage(productId, imageId)
+  refreshStorefront()
+  return deleted
+}
+
+export async function reorderAdminProductImages(productId: string, imageIds: string[]) {
+  await requireAdmin()
+  const reordered = await reorderProductImages(productId, imageIds)
+  refreshStorefront()
+  return reordered
 }

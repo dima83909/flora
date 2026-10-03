@@ -5,6 +5,7 @@ import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react"
 
 import { DeleteProduct } from "@/components/admin/delete-product"
 import { ProductForm } from "@/components/admin/product-form"
+import { ProductImages } from "@/components/admin/product-images"
 import { formatFullDate } from "@/lib/admin-format"
 import { toFormValues } from "@/lib/product-schema"
 import { requireAdmin } from "@/server/admin/auth"
@@ -62,7 +63,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
 
       {created ? (
         <p role="status" className="mt-4 rounded-xl bg-sage/50 px-4 py-3 text-sm text-moss">
-          Товар створено{onSite ? " і він уже в каталозі на сайті" : ""}.
+          Товар створено{onSite ? " і він уже в каталозі на сайті" : ""}. Тепер можна додати фото.
         </p>
       ) : null}
 
@@ -72,6 +73,9 @@ export default async function EditProductPage({ params, searchParams }: PageProp
           initialValues={toFormValues(product)}
           categories={categories}
           featuredElsewhere={featured}
+          media={
+            <ProductImages productId={product.id} images={product.images.map(({ id, url }) => ({ id, url }))} />
+          }
           aside={
             <section className="rounded-2xl border bg-card p-5 sm:p-6">
               <h2 className="font-sans text-base font-medium text-ink">Видалення</h2>
