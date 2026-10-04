@@ -108,7 +108,7 @@ export function HeaderSearch() {
                     <button
                       type="button"
                       onClick={() => setQuery(suggestion)}
-                      className="h-10 rounded-full border border-input px-4 text-[0.9375rem] text-ink transition-colors hover:border-stem hover:bg-linen"
+                      className="h-10 rounded-full border border-input px-4 text-[0.9375rem] text-ink transition-colors hover:border-stem hover:bg-linen any-pointer-coarse:h-11"
                     >
                       {suggestion}
                     </button>

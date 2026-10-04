@@ -147,7 +147,7 @@ export function CatalogView({ products, categories }: CatalogViewProps) {
                   aria-pressed={active}
                   onClick={() => update({ category: item.slug })}
                   className={cn(
-                    "h-10 rounded-full border px-4 text-[0.9375rem] whitespace-nowrap transition-colors",
+                    "h-10 rounded-full border px-4 text-[0.9375rem] whitespace-nowrap transition-colors any-pointer-coarse:h-11",
                     active
                       ? "border-moss bg-moss text-paper"
                       : "border-input bg-transparent text-ink hover:border-stem hover:bg-linen"
@@ -276,7 +276,7 @@ export function CatalogView({ products, categories }: CatalogViewProps) {
                     type="button"
                     onClick={chip.clear}
                     aria-label={`Прибрати фільтр ${chip.label}`}
-                    className="flex h-8 items-center gap-1.5 rounded-full bg-petal pointer-coarse:h-11 pr-2.5 pl-3.5 text-sm text-ink transition-colors hover:bg-blush"
+                    className="flex h-8 items-center gap-1.5 rounded-full bg-petal any-pointer-coarse:h-11 pr-2.5 pl-3.5 text-sm text-ink transition-colors hover:bg-blush"
                   >
                     {chip.label}
                     <XIcon className="size-3.5" />
@@ -284,7 +284,7 @@ export function CatalogView({ products, categories }: CatalogViewProps) {
                 </li>
               ))}
               <li>
-                <button type="button" onClick={reset} className="h-8 px-2 text-sm text-ink-soft underline-offset-4 hover:underline pointer-coarse:h-11">
+                <button type="button" onClick={reset} className="h-8 px-2 text-sm text-ink-soft underline-offset-4 hover:underline any-pointer-coarse:h-11">
                   Скинути все
                 </button>
               </li>

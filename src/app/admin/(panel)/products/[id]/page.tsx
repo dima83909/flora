@@ -36,7 +36,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
 
   return (
     <>
-      <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink pointer-coarse:min-h-11">
+      <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink any-pointer-coarse:min-h-11">
         <ArrowLeftIcon aria-hidden className="size-4" />
         Усі товари
       </Link>
@@ -48,7 +48,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             href={`/bouquets/${product.slug}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-ink-soft underline-offset-4 hover:text-ink hover:underline pointer-coarse:min-h-11"
+            className="inline-flex items-center gap-1.5 text-sm text-ink-soft underline-offset-4 hover:text-ink hover:underline any-pointer-coarse:min-h-11"
           >
             Відкрити на сайті
             <ExternalLinkIcon aria-hidden className="size-3.5" />

@@ -22,7 +22,7 @@ export async function SiteFooter() {
           {contacts.telegramUrl ? (
             <a
               href={contacts.telegramUrl}
-              className="mt-6 inline-flex items-center text-[0.9375rem] text-ink underline-offset-4 hover:underline pointer-coarse:min-h-11"
+              className="mt-6 inline-flex items-center text-[0.9375rem] text-ink underline-offset-4 hover:underline any-pointer-coarse:min-h-11"
               target="_blank"
               rel="noreferrer"
             >
@@ -34,10 +34,10 @@ export async function SiteFooter() {
         {footerNav.map((group) => (
           <nav key={group.title} aria-label={group.title} className="md:col-span-2">
             <h2 className="font-sans text-sm font-medium text-ink">{group.title}</h2>
-            <ul className="mt-4 space-y-3 pointer-coarse:space-y-0">
+            <ul className="mt-4 space-y-3 any-pointer-coarse:space-y-0">
               {group.items.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} className="inline-flex items-center text-[0.9375rem] text-ink-soft transition-colors hover:text-ink pointer-coarse:min-h-11">
+                  <Link href={item.href} className="inline-flex items-center text-[0.9375rem] text-ink-soft transition-colors hover:text-ink any-pointer-coarse:min-h-11">
                     {item.title}
                   </Link>
                 </li>
