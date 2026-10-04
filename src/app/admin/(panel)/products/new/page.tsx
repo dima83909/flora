@@ -15,7 +15,7 @@ export default async function NewProductPage() {
 
   return (
     <>
-      <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink">
+      <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-ink pointer-coarse:min-h-11">
         <ArrowLeftIcon aria-hidden className="size-4" />
         Усі товари
       </Link>

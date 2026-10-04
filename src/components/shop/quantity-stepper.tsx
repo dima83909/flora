@@ -16,7 +16,8 @@ type QuantityStepperProps = {
 export function QuantityStepper({ value, onChange, label, size = "lg", className }: QuantityStepperProps) {
   const button = cn(
     "flex items-center justify-center rounded-full text-ink transition-colors hover:bg-linen disabled:pointer-events-none disabled:opacity-35",
-    size === "lg" ? "size-11" : "size-8"
+    // The small stepper keeps its compact look; the pseudo-element widens the tap area to 44px
+    size === "lg" ? "size-11" : "relative size-8 after:absolute after:-inset-1.5"
   )
   return (
     <div

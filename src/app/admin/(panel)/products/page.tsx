@@ -40,7 +40,7 @@ const columns =
   "md:grid md:grid-cols-[3.5rem_minmax(0,1fr)_9rem_7.5rem_9.5rem] md:items-center md:gap-x-4"
 
 const selectClass =
-  "h-10 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 text-sm text-ink outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:w-auto"
+  "h-10 w-full min-w-0 rounded-lg border border-input bg-card px-2.5 text-sm text-ink outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 pointer-coarse:h-11 sm:w-auto"
 
 export default async function AdminProductsPage({ searchParams }: PageProps<"/admin/products">) {
   await requireAdmin()
@@ -93,7 +93,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
             maxLength={100}
             placeholder="Назва, склад або адреса товару"
             aria-label="Пошук товарів"
-            className="h-10 bg-card pr-3 pl-9"
+            className="h-10 bg-card pr-3 pl-9 pointer-coarse:h-11"
           />
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">

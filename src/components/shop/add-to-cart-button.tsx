@@ -59,7 +59,7 @@ export function AddToCartButton({ product, quantity = 1, variant = "full", class
                 : `Додати «${product.name}» до кошика`
           }
           className={cn(
-            "flex size-10 shrink-0 items-center justify-center rounded-full border border-input text-ink transition-colors hover:border-moss hover:bg-moss hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stem disabled:pointer-events-none disabled:opacity-35",
+            "flex size-10 shrink-0 items-center justify-center rounded-full border border-input pointer-coarse:size-11 text-ink transition-colors hover:border-moss hover:bg-moss hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stem disabled:pointer-events-none disabled:opacity-35",
             added && "border-moss bg-moss text-paper",
             className
           )}

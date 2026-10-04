@@ -18,7 +18,7 @@ export default async function AdminPanelLayout({ children }: LayoutProps<"/admin
     <>
       <header className="border-b bg-card">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4 sm:gap-6 sm:px-6">
-          <Link href="/admin/orders" className="font-heading text-xl leading-none font-light whitespace-nowrap text-ink">
+          <Link href="/admin/orders" className="inline-flex items-center font-heading text-xl leading-none font-light whitespace-nowrap text-ink pointer-coarse:min-h-11 pointer-coarse:min-w-11">
             flora <span className="hidden font-sans text-sm font-normal text-muted-foreground sm:inline">адмін</span>
           </Link>
           <AdminNav />

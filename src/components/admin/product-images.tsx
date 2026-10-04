@@ -186,7 +186,7 @@ export function ProductImages({ productId, images }: { productId: string; images
                   </Button>
                 </div>
               ) : (
-                <div className="mt-2 flex items-center gap-1">
+                <div className="mt-2 flex flex-wrap items-center gap-1">
                   <Button
                     type="button"
                     size="icon-sm"

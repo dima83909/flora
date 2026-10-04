@@ -23,7 +23,7 @@ export function AdminNav() {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm transition-colors",
+              "inline-flex items-center rounded-full px-3.5 py-1.5 text-sm transition-colors pointer-coarse:min-h-11",
               active ? "bg-linen font-medium text-ink" : "text-ink-soft hover:text-ink"
             )}
           >

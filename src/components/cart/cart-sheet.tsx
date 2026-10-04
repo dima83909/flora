@@ -99,7 +99,7 @@ export function CartSheet() {
                         type="button"
                         onClick={() => cartActions.remove(product.slug)}
                         aria-label={`Видалити «${product.name}» з кошика`}
-                        className="-mt-1 -mr-2 flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-linen hover:text-ink"
+                        className="relative -mt-1 -mr-2 flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground after:absolute after:-inset-1.5 hover:bg-linen hover:text-ink"
                       >
                         <XIcon className="size-4" />
                       </button>

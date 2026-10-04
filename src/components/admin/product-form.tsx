@@ -46,7 +46,7 @@ const AVAILABILITY_HINTS: Record<(typeof PRODUCT_AVAILABILITIES)[number], string
 const textareaClass =
   "block w-full resize-y rounded-lg border border-input bg-card px-3 py-2.5 text-[0.9375rem] leading-relaxed outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20"
 
-const inputClass = "h-10 bg-card text-[0.9375rem]"
+const inputClass = "h-10 bg-card text-[0.9375rem] pointer-coarse:h-11"
 
 function Card({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -238,7 +238,7 @@ export function ProductForm({ product, initialValues, categories, featuredElsewh
                 onChange={(event) => set("categoryId", event.target.value)}
                 aria-invalid={invalid("categoryId")}
                 aria-describedby={describedBy("categoryId") ?? (hiddenCategory ? "product-categoryId-hint" : undefined)}
-                className="h-10 w-full rounded-lg border border-input bg-card px-2.5 text-[0.9375rem] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20"
+                className="h-10 w-full rounded-lg border border-input bg-card px-2.5 text-[0.9375rem] outline-none pointer-coarse:h-11 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20"
               >
                 <option value="" disabled>
                   Оберіть категорію

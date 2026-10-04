@@ -19,7 +19,7 @@ export function Logo({ className }: { className?: string }) {
     <Link
       href="/"
       aria-label={`${siteConfig.name} — на головну`}
-      className={cn("inline-flex items-end gap-1.5 text-ink", className)}
+      className={cn("relative inline-flex items-end gap-1.5 text-ink after:absolute after:-inset-y-2 after:inset-x-0", className)}
     >
       <Sprig className="h-7 w-5 text-moss" />
       <span className="font-heading text-[1.65rem] leading-none font-light tracking-[-0.02em]">

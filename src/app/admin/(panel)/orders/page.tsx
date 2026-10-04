@@ -74,7 +74,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
               maxLength={100}
               placeholder="Номер, ім'я, телефон або місто"
               aria-label="Пошук замовлень"
-              className="h-10 bg-card pr-3 pl-9"
+              className="h-10 bg-card pr-3 pl-9 pointer-coarse:h-11"
             />
           </div>
           <Button type="submit" variant="outline">
@@ -93,7 +93,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                   href={ordersHref({ status: tab.status, query: filters.query })}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm whitespace-nowrap transition-colors",
+                    "flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm whitespace-nowrap transition-colors pointer-coarse:h-11",
                     active ? "border-moss bg-moss text-paper" : "bg-card text-ink-soft hover:text-ink"
                   )}
                 >

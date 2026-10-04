@@ -48,7 +48,7 @@ export const viewport: Viewport = {
 // Fonts and document shell only: the storefront and the admin panel bring their own chrome
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="uk" className={`${literata.variable} ${commissioner.variable} h-full antialiased`}>
+    <html lang="uk" data-scroll-behavior="smooth" className={`${literata.variable} ${commissioner.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   )

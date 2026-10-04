@@ -36,7 +36,7 @@ export function Breadcrumbs({ items, className }: { items: Crumb[]; className?: 
                 </span>
               ) : (
                 <>
-                  <Link href={item.href} className="transition-colors hover:text-ink">
+                  <Link href={item.href} className="relative transition-colors after:absolute after:-inset-y-3 after:inset-x-0 hover:text-ink">
                     {item.name}
                   </Link>
                   <ChevronRightIcon aria-hidden className="size-3.5 shrink-0" />

@@ -23,7 +23,7 @@ export function FavoriteButton({ slug, name, variant = "overlay", className }: F
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full transition-colors",
         variant === "overlay"
-          ? "size-10 bg-paper/85 text-ink backdrop-blur-sm hover:bg-paper"
+          ? "size-10 bg-paper/85 pointer-coarse:size-11 text-ink backdrop-blur-sm hover:bg-paper"
           : "size-12 border border-input bg-transparent text-ink hover:bg-linen",
         className
       )}
