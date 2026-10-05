@@ -42,3 +42,30 @@ export function matchesImageSignature(bytes: Uint8Array, type: ProductImageType)
       return ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP"
   }
 }
+
+/** Width of the card thumbnail: a catalog card is at most ~380 CSS px wide, so this covers a 2x screen */
+export const CARD_IMAGE_WIDTH = 800
+
+/** Photos uploaded in the admin panel live in a public Vercel Blob store; seed photos used to live in /public */
+export function isStoredInBlob(url: string) {
+  try {
+    return new URL(url).hostname.endsWith(".blob.vercel-storage.com")
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Where the card thumbnail of a stored photo lives: the same name with `-card` added and a
+ * `.webp` extension (thumbnails are always WebP), next to the original. Only Blob photos have one:
+ * it is served straight from Blob with a year-long cache, unlike /_next/image, which browsers
+ * must revalidate every time.
+ */
+export function cardImageUrl(url: string) {
+  if (!isStoredInBlob(url)) return undefined
+  const parsed = new URL(url)
+  const match = /^(.*?)(-card)?(\.[a-z0-9]+)$/i.exec(parsed.pathname)
+  if (!match) return undefined
+  parsed.pathname = `${match[1]}-card.webp`
+  return parsed.toString()
+}

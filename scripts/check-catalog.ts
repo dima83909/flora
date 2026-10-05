@@ -11,7 +11,7 @@ import { isDeepStrictEqual } from "node:util"
 
 import { careByCategory } from "../prisma/seed-data/care"
 import { categories as mockCategories, products as fixtureProducts } from "../prisma/seed-data/catalog"
-import { photosOnDisk } from "../prisma/seed-data/photos"
+import { seedPhotos } from "../prisma/seed-data/photos"
 import { applyFilters, DEFAULT_SORT, sortOptions, sortProducts, priceRanges, type CatalogFilters } from "@/lib/catalog"
 import type { Product } from "@/types/catalog"
 import {
@@ -27,7 +27,7 @@ import { getDb } from "@/server/db"
 // The seed adds per-category care tips and the photographs found on disk to every fixture product,
 // and creates it at midnight UTC of its fixture date
 const mockProducts: Product[] = fixtureProducts.map((p) => {
-  const images = p.images?.length ? p.images : photosOnDisk(p.slug)
+  const images = p.images?.length ? p.images : seedPhotos(p.slug)
   return {
     ...p,
     addedAt: new Date(`${p.addedAt}T00:00:00Z`).toISOString(),

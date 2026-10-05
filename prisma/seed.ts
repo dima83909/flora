@@ -16,7 +16,7 @@ import { PrismaPg } from "@prisma/adapter-pg"
 import { PrismaClient } from "../src/generated/prisma/client"
 import { careByCategory } from "./seed-data/care"
 import { categories, products } from "./seed-data/catalog"
-import { photosOnDisk } from "./seed-data/photos"
+import { readPhotoManifest, seedPhotos } from "./seed-data/photos"
 import { toMinor } from "../src/lib/money"
 import { toDbAvailability } from "../src/server/catalog/availability"
 
@@ -28,6 +28,7 @@ if (!connectionString) {
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 
 const overwrite = process.env.SEED_OVERWRITE === "1"
+const photoManifest = readPhotoManifest()
 
 async function main() {
   // The homepage shows the four most popular items labelled "popular"
@@ -49,7 +50,7 @@ async function main() {
         name: category.name,
         description: category.description,
         illustration: category.visual,
-        imageUrl: category.image ?? null,
+        imageUrl: category.image ? (photoManifest[category.image] ?? category.image) : null,
         sortOrder: (index + 1) * 10,
         isActive: true,
         isFeatured: category.featured ?? false,
@@ -109,7 +110,7 @@ async function main() {
       if (keep && existing._count.images > 0) continue
 
       // The stored gallery mirrors the fixtures, or else the photographs found on disk
-      const images = product.images?.length ? product.images : photosOnDisk(product.slug)
+      const images = product.images?.length ? product.images : seedPhotos(product.slug)
       if (!keep) await tx.productImage.deleteMany({ where: { productId: row.id } })
       if (images.length) {
         await tx.productImage.createMany({

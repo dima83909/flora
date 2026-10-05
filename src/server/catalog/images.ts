@@ -3,9 +3,13 @@ import "server-only"
 import { randomUUID } from "node:crypto"
 
 import { del, put } from "@vercel/blob"
+import sharp from "sharp"
 
 import {
+  CARD_IMAGE_WIDTH,
+  cardImageUrl,
   isProductImageType,
+  isStoredInBlob,
   matchesImageSignature,
   PRODUCT_IMAGE_MAX_BYTES,
   PRODUCT_IMAGE_TYPES,
@@ -44,13 +48,11 @@ export const blobStorage: ImageStorage = {
   },
 }
 
-/** Seed photos are files in /public; only uploaded ones live in Blob */
-export function isStoredInBlob(url: string) {
-  try {
-    return new URL(url).hostname.endsWith(".blob.vercel-storage.com")
-  } catch {
-    return false
-  }
+/** Card thumbnail of a photo: smaller, so catalog pages stay light, and always WebP */
+export async function makeCardImage(file: Blob) {
+  const bytes = Buffer.from(await file.arrayBuffer())
+  const data = await sharp(bytes).rotate().resize({ width: CARD_IMAGE_WIDTH, withoutEnlargement: true }).webp({ quality: 75 }).toBuffer()
+  return new Blob([new Uint8Array(data)], { type: "image/webp" })
 }
 
 /**
@@ -58,7 +60,8 @@ export function isStoredInBlob(url: string) {
  * orphaned file behind, so it is logged rather than undoing the user's action.
  */
 export async function removeStoredFiles(urls: string[], storage: ImageStorage = blobStorage) {
-  const stored = urls.filter(isStoredInBlob)
+  // Every stored photo has a card thumbnail next to it (or did, before thumbnails existed)
+  const stored = urls.filter(isStoredInBlob).flatMap((url) => [url, cardImageUrl(url)].filter((u): u is string => !!u))
   if (!stored.length) return
   try {
     await storage.remove(stored)
@@ -101,6 +104,16 @@ export async function addProductImage(
     file,
     file.type
   )
+  // The thumbnail is an optimisation: without it the card falls back to the original photo
+  const thumbnail = cardImageUrl(url)
+  if (thumbnail) {
+    try {
+      const card = await makeCardImage(file)
+      await storage.upload(new URL(thumbnail).pathname.slice(1), card, "image/webp")
+    } catch (error) {
+      console.error("Failed to store a card thumbnail", thumbnail, error)
+    }
+  }
   try {
     const image = await db.productImage.create({
       data: {

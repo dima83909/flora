@@ -6,6 +6,7 @@ import { Price } from "@/components/shop/price"
 import { ProductBadges } from "@/components/shop/product-badges"
 import { ProductImage } from "@/components/shop/product-image"
 import { availabilityText, isPurchasable } from "@/lib/catalog"
+import { cardImageUrl } from "@/lib/product-images"
 import { cn } from "@/lib/utils"
 import type { Product } from "@/types/catalog"
 
@@ -27,6 +28,7 @@ export function ProductCard({ product, headingLevel: Heading = "h3" }: ProductCa
         <ProductImage
           visual={product.visual}
           src={photo}
+          cardSrc={photo ? cardImageUrl(photo) : undefined}
           label={photo ? product.name : undefined}
           sizes="(min-width: 1024px) 25vw, 50vw"
           className={cn(
