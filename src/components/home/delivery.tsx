@@ -8,7 +8,7 @@ export function Delivery() {
       <div className="container-page grid gap-14 lg:grid-cols-12 lg:gap-8">
         <div className="lg:col-span-6">
           <h2 id="delivery-title" className="text-title font-light">
-            Доставка по всій Україні
+            Доставка по всій Україні цілодобово 24/7
           </h2>
           <p className="mt-5 max-w-lg text-lg leading-relaxed text-paper/75">
             Вартість і терміни залежать від міста, тому ми не рахуємо їх автоматично. Після

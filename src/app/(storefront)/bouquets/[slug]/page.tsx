@@ -54,7 +54,7 @@ function deliveryPromise(product: Product) {
     return "Під замовлення, доставка по всій Україні"
   }
   if (product.availability === "out_of_stock") return "Зараз немає в наявності. Додайте в обране, щоб повернутися пізніше"
-  return "Доставляємо по всій Україні"
+  return "Доставляємо по всій Україні цілодобово 24/7"
 }
 
 const availabilityDot: Record<Availability, string> = {
@@ -160,7 +160,7 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
               ) : null}
               <Details title="Доставка та оплата">
                 <p>
-                  Доставляємо по всій Україні. Після оформлення менеджер напише вам у Telegram і
+                  Доставляємо по всій Україні цілодобово 24/7. Після оформлення менеджер напише вам у Telegram і
                   узгодить адресу, дату й час, вартість доставки та спосіб оплати. Онлайн-оплати на
                   сайті немає. Детальніше в розділі{" "}
                   <Link href="/#delivery" className="text-ink underline underline-offset-4">

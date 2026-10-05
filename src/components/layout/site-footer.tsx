@@ -17,7 +17,7 @@ export async function SiteFooter() {
         <div className="md:col-span-5">
           <Logo />
           <p className="mt-5 max-w-sm text-[0.9375rem] leading-relaxed text-ink-soft">
-            Квіткова майстерня. Збираємо букети й доставляємо їх по всій Україні.
+            Квіткова майстерня. Збираємо букети й доставляємо їх по всій Україні цілодобово 24/7.
           </p>
           {contacts.telegramUrl ? (
             <a
