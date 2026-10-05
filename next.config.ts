@@ -23,7 +23,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: "https", hostname: "*.public.blob.vercel-storage.com", pathname: "/products/**" }],
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }]
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      {
+        // Vercel answers optimized photos with `max-age=0, must-revalidate`, so a card created after a
+        // filter change waits for a revalidation round trip and flashes empty. Let browsers reuse them.
+        source: "/_next/image",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      },
+    ]
   },
 }
 
