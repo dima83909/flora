@@ -15,7 +15,11 @@ type ProductImageProps = {
   sizes?: string
   /** Load the photograph eagerly: only for the main image above the fold */
   preload?: boolean
-  /** Skip lazy loading: for cards that may be re-ordered on screen, where a lazy image blanks for a frame after the move */
+  /**
+   * Skip lazy loading and decode the photograph before the next paint. For listings that rebuild their
+   * cards on filter changes: a re-created <img> is cached but decodes asynchronously, so the card
+   * would stay blank for a few frames.
+   */
   eager?: boolean
   view?: ArtView
   className?: string
@@ -36,6 +40,7 @@ export function ProductImage({ visual, src, label, sizes = "50vw", preload, eage
           sizes={sizes}
           preload={preload}
           loading={eager ? "eager" : undefined}
+          decoding={eager ? "sync" : undefined}
           className={cn("object-cover", className)}
         />
       </span>
