@@ -15,6 +15,8 @@ type ProductImageProps = {
   sizes?: string
   /** Load the photograph eagerly: only for the main image above the fold */
   preload?: boolean
+  /** Skip lazy loading: for cards that may be re-ordered on screen, where a lazy image blanks for a frame after the move */
+  eager?: boolean
   view?: ArtView
   className?: string
 }
@@ -23,11 +25,19 @@ type ProductImageProps = {
  * Single entry point for product imagery. Shows the photograph when the product has
  * one and the illustration otherwise. The parent sets the size (an aspect-ratio box).
  */
-export function ProductImage({ visual, src, label, sizes = "50vw", preload, view, className }: ProductImageProps) {
+export function ProductImage({ visual, src, label, sizes = "50vw", preload, eager, view, className }: ProductImageProps) {
   if (src) {
     return (
       <span className="relative block size-full">
-        <Image src={src} alt={label ?? ""} fill sizes={sizes} preload={preload} className={cn("object-cover", className)} />
+        <Image
+          src={src}
+          alt={label ?? ""}
+          fill
+          sizes={sizes}
+          preload={preload}
+          loading={eager ? "eager" : undefined}
+          className={cn("object-cover", className)}
+        />
       </span>
     )
   }
