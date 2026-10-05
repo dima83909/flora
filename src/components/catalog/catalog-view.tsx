@@ -48,10 +48,6 @@ const EMPTY_FILTERS: CatalogFilters = {
 
 const SEARCH_DEBOUNCE_MS = 250
 
-// Cards in the first screens load their photo eagerly. Sorting moves cards in the DOM, and a moved
-// lazy image goes blank for a frame; eager ones repaint at once. Cards further down stay lazy.
-const EAGER_PHOTOS = 12
-
 type CatalogViewProps = {
   products: Product[]
   categories: Category[]
@@ -297,9 +293,9 @@ export function CatalogView({ products, categories }: CatalogViewProps) {
 
           {results.length ? (
             <ul className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 md:grid-cols-3 md:gap-y-14">
-              {results.map((product, index) => (
+              {results.map((product) => (
                 <li key={product.slug} className="flex">
-                  <ProductCard product={product} headingLevel="h2" eager={index < EAGER_PHOTOS} />
+                  <ProductCard product={product} headingLevel="h2" />
                 </li>
               ))}
             </ul>

@@ -13,11 +13,9 @@ type ProductCardProps = {
   product: Product
   /** Heading level inside the surrounding section */
   headingLevel?: "h2" | "h3"
-  /** Load the photo right away instead of lazily; see ProductImage */
-  eager?: boolean
 }
 
-export function ProductCard({ product, headingLevel: Heading = "h3", eager }: ProductCardProps) {
+export function ProductCard({ product, headingLevel: Heading = "h3" }: ProductCardProps) {
   const available = isPurchasable(product.availability)
   const showAvailability = product.availability !== "in_stock"
   const photo = product.images?.[0]
@@ -31,7 +29,6 @@ export function ProductCard({ product, headingLevel: Heading = "h3", eager }: Pr
           src={photo}
           label={photo ? product.name : undefined}
           sizes="(min-width: 1024px) 25vw, 50vw"
-          eager={eager}
           className={cn(
             "origin-[50%_38%] transition-transform duration-700 ease-petal",
             photo ? "[@media(hover:hover)]:group-hover:scale-[1.05]" : "[@media(hover:hover)]:group-hover:scale-[1.28]",
