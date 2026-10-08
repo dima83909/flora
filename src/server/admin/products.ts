@@ -1,9 +1,10 @@
 import "server-only"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 import { cache } from "react"
 
 import { requireAdmin } from "@/server/admin/auth"
+import { CATALOG_CACHE_TAG } from "@/server/catalog"
 import { addProductImage, deleteProductImage, reorderProductImages } from "@/server/catalog/images"
 import {
   countFeaturedProducts,
@@ -27,9 +28,11 @@ export const PRODUCTS_PAGE_SIZE = 25
 /**
  * Every storefront page carries catalogue data (the layout feeds the cart, search
  * and menu), so a change refreshes them all, the sitemap included. Catalogue edits
- * are rare enough for that to be cheap.
+ * are rare enough for that to be cheap. The cached catalogue reads expire at once
+ * (no stale window), so the manager sees the change on the very next page load.
  */
 function refreshStorefront() {
+  revalidateTag(CATALOG_CACHE_TAG, { expire: 0 })
   revalidatePath("/", "layout")
   revalidatePath("/sitemap.xml")
 }

@@ -1,5 +1,6 @@
 import "server-only"
 
+import { unstable_cache } from "next/cache"
 import { cache } from "react"
 
 import type { Prisma } from "@/generated/prisma/client"
@@ -27,9 +28,12 @@ import type { Category, CategoryWithPrice, Product } from "@/types/catalog"
  * the database. Returns the same plain Product/Category shapes the UI uses, so
  * results can be passed straight to Client Components.
  *
- * Reads are wrapped in React `cache()`, so a layout and a page asking for the same
- * data within one request hit the database once. Freshness of prerendered pages is
- * controlled by the route segment `revalidate` (see src/app/layout.tsx).
+ * Storefront reads go through Next's data cache, tagged CATALOG_CACHE_TAG: pages rendered
+ * per request (the /bouquets listing) and ISR regenerations reuse the stored result instead
+ * of querying the database. Admin edits invalidate the tag at once (see
+ * src/server/admin/products.ts); changes made straight in the database show up within
+ * CATALOG_REVALIDATE_SECONDS. On top of that, React `cache()` deduplicates calls within
+ * one render, so a layout and a page asking for the same data share one lookup.
  *
  * Structured filters (category, price, stock) run in SQL. Text search and ordering
  * reuse the storefront's own rules so results match exactly; that is fine for a
@@ -37,6 +41,25 @@ import type { Category, CategoryWithPrice, Product } from "@/types/catalog"
  */
 
 export type ProductFilters = Partial<Omit<CatalogFilters, "favoritesOnly">>
+
+/** Tag of every cached catalogue read; revalidate it after changing products or categories */
+export const CATALOG_CACHE_TAG = "catalog"
+
+/** Safety net for edits made outside the admin panel (seed, scripts, SQL) */
+const CATALOG_REVALIDATE_SECONDS = 300
+
+/**
+ * Stores the result in Next's data cache. The cache exists only inside the Next server
+ * (Next defines NEXT_RUNTIME there), so scripts such as `db:check` read the database directly.
+ * Results are stored as JSON: return plain data, no Dates.
+ */
+function cachedRead<T>(key: string, read: () => Promise<T>): () => Promise<T> {
+  if (!process.env.NEXT_RUNTIME) return read
+  return unstable_cache(read, ["catalog", key], {
+    tags: [CATALOG_CACHE_TAG],
+    revalidate: CATALOG_REVALIDATE_SECONDS,
+  })
+}
 
 /** Products and categories for Client Components (cart, search, favourites, navigation) */
 export type StorefrontCatalog = {
@@ -86,8 +109,7 @@ async function findProducts(filters: ProductFilters): Promise<Product[]> {
   return sortProducts(matched, filters.sort ?? DEFAULT_SORT, { search: Boolean(query) })
 }
 
-/** Active categories in display order */
-export const getCategories = cache(async (): Promise<Category[]> => {
+const readCategories = cachedRead("categories", async (): Promise<Category[]> => {
   const rows = await getDb().category.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -95,13 +117,7 @@ export const getCategories = cache(async (): Promise<Category[]> => {
   return rows.map(toStorefrontCategory)
 })
 
-export const getCategoryBySlug = cache(async (slug: string): Promise<Category | null> => {
-  const row = await getDb().category.findFirst({ where: { slug, isActive: true } })
-  return row ? toStorefrontCategory(row) : null
-})
-
-/** Homepage categories with the lowest published price in each */
-export const getFeaturedCategories = cache(async (): Promise<CategoryWithPrice[]> => {
+const readFeaturedCategories = cachedRead("featured-categories", async (): Promise<CategoryWithPrice[]> => {
   const db = getDb()
   const [rows, prices] = await Promise.all([
     db.category.findMany({
@@ -117,15 +133,35 @@ export const getFeaturedCategories = cache(async (): Promise<CategoryWithPrice[]
   })
 })
 
-/** All published products in the default order */
-export const getProducts = cache((): Promise<Product[]> => findProducts({}))
+const readProducts = cachedRead("products", () => findProducts({}))
 
-/** Catalogue listing with the same filters and sorting as /bouquets */
+const readFeaturedProducts = cachedRead("featured-products", async (): Promise<Product[]> => {
+  const rows = await getDb().product.findMany({
+    where: { ...publishedProduct, isFeatured: true },
+    include: productInclude,
+  })
+  return sortProducts(rows.map(toStorefrontProduct), DEFAULT_SORT)
+})
+
+/** Active categories in display order */
+export const getCategories = cache((): Promise<Category[]> => readCategories())
+
+export const getCategoryBySlug = cache(async (slug: string): Promise<Category | null> => {
+  return (await getCategories()).find((category) => category.slug === slug) ?? null
+})
+
+/** Homepage categories with the lowest published price in each */
+export const getFeaturedCategories = cache((): Promise<CategoryWithPrice[]> => readFeaturedCategories())
+
+/** All published products in the default order */
+export const getProducts = cache((): Promise<Product[]> => readProducts())
+
+/** Catalogue listing with the same filters and sorting as /bouquets; not cached, used by checks */
 export function filterProducts(filters: ProductFilters): Promise<Product[]> {
   return findProducts(filters)
 }
 
-/** Text search across name, composition, stems and category */
+/** Text search across name, composition, stems and category; not cached, used by checks */
 export async function searchProducts(query: string, limit?: number): Promise<Product[]> {
   if (!query.trim()) return []
   const found = await findProducts({ query })
@@ -134,19 +170,12 @@ export async function searchProducts(query: string, limit?: number): Promise<Pro
 
 /** Products flagged for the homepage, in the catalogue's default order */
 export const getFeaturedProducts = cache(async (limit = HOMEPAGE_FEATURED_LIMIT): Promise<Product[]> => {
-  const rows = await getDb().product.findMany({
-    where: { ...publishedProduct, isFeatured: true },
-    include: productInclude,
-  })
-  return sortProducts(rows.map(toStorefrontProduct), DEFAULT_SORT).slice(0, limit)
+  return (await readFeaturedProducts()).slice(0, limit)
 })
 
+/** A published product; looked up in the cached catalogue, which every storefront page loads anyway */
 export const getProductBySlug = cache(async (slug: string): Promise<Product | null> => {
-  const row = await getDb().product.findFirst({
-    where: { slug, ...publishedProduct },
-    include: productInclude,
-  })
-  return row ? toStorefrontProduct(row) : null
+  return (await getProducts()).find((product) => product.slug === slug) ?? null
 })
 
 /** Same category first, then other categories except gifts, each in the default order */
@@ -161,12 +190,7 @@ export async function getRelatedProducts(product: Product, limit = 4): Promise<P
 
 /** Slugs of every published product, e.g. for generateStaticParams and the sitemap */
 export const getProductSlugs = cache(async (): Promise<string[]> => {
-  const rows = await getDb().product.findMany({
-    where: publishedProduct,
-    select: { slug: true },
-    orderBy: { slug: "asc" },
-  })
-  return rows.map((row) => row.slug)
+  return (await getProducts()).map((product) => product.slug).sort()
 })
 
 export const getStorefrontCatalog = cache(
