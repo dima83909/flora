@@ -16,12 +16,13 @@ import { isGiftCategory } from "@/config/site"
 import { fromMinor, toMinor } from "@/lib/money"
 import { HOMEPAGE_FEATURED_LIMIT } from "@/lib/product-schema"
 import {
+  toProductSummary,
   toStorefrontCategory,
   toStorefrontProduct,
   type DbProductWithRelations,
 } from "@/server/catalog/mappers"
 import { getDb } from "@/server/db"
-import type { Category, CategoryWithPrice, Product } from "@/types/catalog"
+import type { Category, CategoryWithPrice, Product, ProductSummary } from "@/types/catalog"
 
 /*
  * Server-side catalogue: the only place the storefront reads catalogue data from
@@ -63,7 +64,7 @@ function cachedRead<T>(key: string, read: () => Promise<T>): () => Promise<T> {
 
 /** Products and categories for Client Components (cart, search, favourites, navigation) */
 export type StorefrontCatalog = {
-  products: Product[]
+  products: ProductSummary[]
   categories: Category[]
 }
 
@@ -156,6 +157,14 @@ export const getFeaturedCategories = cache((): Promise<CategoryWithPrice[]> => r
 /** All published products in the default order */
 export const getProducts = cache((): Promise<Product[]> => readProducts())
 
+/**
+ * All published products as cards need them, in the default order. One array per render:
+ * the layout and the catalogue page pass the same objects, so the page payload carries them once.
+ */
+export const getProductSummaries = cache(async (): Promise<ProductSummary[]> => {
+  return (await getProducts()).map(toProductSummary)
+})
+
 /** Catalogue listing with the same filters and sorting as /bouquets; not cached, used by checks */
 export function filterProducts(filters: ProductFilters): Promise<Product[]> {
   return findProducts(filters)
@@ -195,7 +204,7 @@ export const getProductSlugs = cache(async (): Promise<string[]> => {
 
 export const getStorefrontCatalog = cache(
   async (): Promise<StorefrontCatalog> => {
-    const [products, categories] = await Promise.all([getProducts(), getCategories()])
+    const [products, categories] = await Promise.all([getProductSummaries(), getCategories()])
     return { products, categories }
   }
 )

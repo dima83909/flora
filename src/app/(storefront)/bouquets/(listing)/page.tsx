@@ -6,7 +6,7 @@ import { categoryHref } from "@/config/site"
 import { catalogTitle, isRefinedListing, parseFilters } from "@/lib/catalog"
 import { pageOpenGraph } from "@/lib/metadata"
 import { canonicalPath } from "@/lib/structured-data"
-import { getCategories, getProducts } from "@/server/catalog"
+import { getCategories, getProductSummaries } from "@/server/catalog"
 
 const listFormat = new Intl.ListFormat("uk", { type: "conjunction" })
 
@@ -42,6 +42,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/bouquets">)
 export default async function CatalogPage() {
   // Filters live in the URL: render per request so the initial HTML matches them
   await connection()
-  const [products, categories] = await Promise.all([getProducts(), getCategories()])
+  // The same summaries the layout passes to the cart and search, so the page carries them once
+  const [products, categories] = await Promise.all([getProductSummaries(), getCategories()])
   return <CatalogView products={products} categories={categories} />
 }

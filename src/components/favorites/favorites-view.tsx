@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { pluralize } from "@/lib/catalog"
 import { useFavorites } from "@/lib/stores/favorites"
 import { useHydrated } from "@/lib/use-hydrated"
-import type { Product } from "@/types/catalog"
+import type { ProductSummary } from "@/types/catalog"
 
 export function FavoritesView() {
   const hydrated = useHydrated()
@@ -18,7 +18,7 @@ export function FavoritesView() {
   // Most recently saved first; slugs of products no longer in the catalogue are skipped
   const items = [...slugs].reverse().flatMap((slug) => {
     const product = getProduct(slug)
-    return product ? [product] : ([] as Product[])
+    return product ? [product] : ([] as ProductSummary[])
   })
 
   if (!hydrated) {

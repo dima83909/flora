@@ -2,12 +2,12 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from "react"
 
-import type { Category, Product } from "@/types/catalog"
+import type { Category, ProductSummary } from "@/types/catalog"
 
 type CatalogContextValue = {
-  products: Product[]
+  products: ProductSummary[]
   categories: Category[]
-  getProduct: (slug: string) => Product | undefined
+  getProduct: (slug: string) => ProductSummary | undefined
   getCategory: (slug: string) => Category | undefined
 }
 
@@ -24,7 +24,7 @@ export function CatalogProvider({
   categories,
   children,
 }: {
-  products: Product[]
+  products: ProductSummary[]
   categories: Category[]
   children: ReactNode
 }) {

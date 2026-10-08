@@ -1,10 +1,10 @@
 import { discountPercent } from "@/lib/catalog"
 import { cn } from "@/lib/utils"
-import type { Product } from "@/types/catalog"
+import type { ProductSummary } from "@/types/catalog"
 
 type Badge = { text: string; tone: "sale" | "new" | "popular" | "low" | "muted" }
 
-export function getBadges(product: Product): Badge[] {
+export function getBadges(product: ProductSummary): Badge[] {
   const badges: Badge[] = []
   const discount = discountPercent(product)
   if (product.availability === "out_of_stock") badges.push({ text: "Немає в наявності", tone: "muted" })
@@ -26,7 +26,7 @@ const toneClass: Record<Badge["tone"], string> = {
   muted: "bg-ink/75 text-paper",
 }
 
-export function ProductBadges({ product, className }: { product: Product; className?: string }) {
+export function ProductBadges({ product, className }: { product: ProductSummary; className?: string }) {
   const badges = getBadges(product)
   if (!badges.length) return null
   return (

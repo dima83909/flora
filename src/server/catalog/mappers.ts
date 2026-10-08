@@ -1,7 +1,7 @@
 import type { Category as DbCategory, Product as DbProduct, ProductImage } from "@/generated/prisma/client"
 import { fromMinor } from "@/lib/money"
 import { toStorefrontAvailability } from "@/server/catalog/availability"
-import type { Category, Product, ProductVisual } from "@/types/catalog"
+import type { Category, Product, ProductSummary, ProductVisual } from "@/types/catalog"
 
 export type DbProductWithRelations = DbProduct & {
   category: Pick<DbCategory, "slug">
@@ -55,5 +55,28 @@ export function toStorefrontProduct(product: DbProductWithRelations): Product {
     addedAt: product.createdAt.toISOString(),
     visual: toVisual(product.illustration),
     ...(images.length ? { images } : {}),
+  }
+}
+
+/** A product as cards, the cart and search need it, without the long texts or the gallery */
+export function toProductSummary(product: Product): ProductSummary {
+  const { slug, name, category, composition, stems, price, oldPrice, isNew, isPopular } = product
+  const { availability, leadDays, popularity, addedAt, visual, images } = product
+  return {
+    slug,
+    name,
+    category,
+    composition,
+    stems,
+    price,
+    ...(oldPrice !== undefined ? { oldPrice } : {}),
+    ...(isNew ? { isNew } : {}),
+    ...(isPopular ? { isPopular } : {}),
+    availability,
+    ...(leadDays !== undefined ? { leadDays } : {}),
+    popularity,
+    addedAt,
+    visual,
+    ...(images?.length ? { images: [images[0]] } : {}),
   }
 }

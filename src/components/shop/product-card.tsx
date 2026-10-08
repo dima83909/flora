@@ -8,10 +8,10 @@ import { ProductImage } from "@/components/shop/product-image"
 import { availabilityText, isPurchasable } from "@/lib/catalog"
 import { cardImageUrl } from "@/lib/product-images"
 import { cn } from "@/lib/utils"
-import type { Product } from "@/types/catalog"
+import type { ProductSummary } from "@/types/catalog"
 
 type ProductCardProps = {
-  product: Product
+  product: ProductSummary
   /** Heading level inside the surrounding section */
   headingLevel?: "h2" | "h3"
 }
@@ -62,7 +62,12 @@ export function ProductCard({ product, headingLevel: Heading = "h3" }: ProductCa
             </p>
           ) : null}
         </div>
-        <AddToCartButton product={product} variant="icon" className="relative z-10" />
+        <AddToCartButton
+          // Only what the button needs crosses to the client, not the whole product
+          product={{ slug: product.slug, name: product.name, availability: product.availability }}
+          variant="icon"
+          className="relative z-10"
+        />
       </div>
     </article>
   )

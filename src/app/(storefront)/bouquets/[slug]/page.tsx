@@ -96,7 +96,8 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
         <div className="mt-5 grid gap-8 md:mt-8 lg:grid-cols-12 lg:gap-12 xl:gap-16">
           <div className="-mx-5 md:mx-0 lg:col-span-7">
             <div className="lg:sticky lg:top-32">
-              <ProductGallery product={product}>
+              {/* Client components get only the fields they use, not the description and care texts */}
+              <ProductGallery product={{ name: product.name, visual: product.visual, images: product.images }}>
                 <ProductBadges product={product} className="pointer-events-none absolute top-4 left-5 md:left-4" />
               </ProductGallery>
             </div>
@@ -115,7 +116,15 @@ export default async function ProductPage({ params }: PageProps<"/bouquets/[slug
             </p>
 
             <div className="mt-8">
-              <PurchasePanel product={product} />
+              <PurchasePanel
+                product={{
+                  slug: product.slug,
+                  name: product.name,
+                  price: product.price,
+                  oldPrice: product.oldPrice,
+                  availability: product.availability,
+                }}
+              />
             </div>
 
             <ul className="mt-8 space-y-3.5 rounded-2xl bg-linen/70 p-5 text-[0.9375rem] leading-snug text-ink md:p-6">

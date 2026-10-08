@@ -16,10 +16,10 @@ import { cartActions, useCartLines } from "@/lib/stores/cart"
 import { useHydrated } from "@/lib/use-hydrated"
 import { cn, formatPrice } from "@/lib/utils"
 import type { UnavailableItem } from "@/server/orders/create-order"
-import type { Product } from "@/types/catalog"
+import type { ProductSummary } from "@/types/catalog"
 
 type Values = Record<CustomerField, string>
-type Line = { slug: string; quantity: number; product?: Product }
+type Line = { slug: string; quantity: number; product?: ProductSummary }
 
 const MANAGER_NOTE =
   "Після оформлення менеджер зв'яжеться з вами в Telegram, щоб уточнити деталі доставки та оплати."

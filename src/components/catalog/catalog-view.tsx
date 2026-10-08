@@ -34,7 +34,7 @@ import {
   type CatalogFilters,
 } from "@/lib/catalog"
 import { useFavorites } from "@/lib/stores/favorites"
-import type { Category, Product } from "@/types/catalog"
+import type { Category, ProductSummary } from "@/types/catalog"
 import { cn } from "@/lib/utils"
 
 const EMPTY_FILTERS: CatalogFilters = {
@@ -49,7 +49,7 @@ const EMPTY_FILTERS: CatalogFilters = {
 const SEARCH_DEBOUNCE_MS = 250
 
 type CatalogViewProps = {
-  products: Product[]
+  products: ProductSummary[]
   categories: Category[]
 }
 

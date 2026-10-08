@@ -46,6 +46,31 @@ export type Product = {
   images?: string[]
 }
 
+/**
+ * The part of a product that cards, the cart, header search, favourites and navigation
+ * need. Every storefront page ships the whole catalogue in this shape, so the long texts
+ * (description, care tips, size) stay on the server and only the main photo is kept.
+ */
+export type ProductSummary = Pick<
+  Product,
+  | "slug"
+  | "name"
+  | "category"
+  | "composition"
+  | "stems"
+  | "price"
+  | "oldPrice"
+  | "isNew"
+  | "isPopular"
+  | "availability"
+  | "leadDays"
+  | "popularity"
+  | "addedAt"
+  | "visual"
+  // The main photo only, when there is one
+  | "images"
+>
+
 export type Category = {
   slug: string
   name: string

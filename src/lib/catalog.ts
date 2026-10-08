@@ -1,5 +1,5 @@
 import { isGiftCategory } from "@/config/site"
-import type { Availability, Category, Product } from "@/types/catalog"
+import type { Availability, Category, ProductSummary } from "@/types/catalog"
 
 /** Category fields the shared catalogue logic needs */
 export type CategoryRef = Pick<Category, "slug" | "name">
@@ -103,7 +103,7 @@ function normalize(value: string) {
  * Every word of the query must appear in the name, composition, stems or category name.
  * Case-, apostrophe- and ё/е-insensitive. Shared by the storefront and the server catalogue.
  */
-export function productMatchesQuery(product: Product, query: string, categoryName = "") {
+export function productMatchesQuery(product: ProductSummary, query: string, categoryName = "") {
   if (!query) return true
   const haystack = normalize(
     [product.name, product.composition, product.stems.join(" "), categoryName].join(" ")
@@ -118,12 +118,12 @@ export function isPurchasable(availability: Availability) {
   return availability !== "out_of_stock"
 }
 
-export function applyFilters(
-  items: Product[],
+export function applyFilters<T extends ProductSummary>(
+  items: T[],
   filters: CatalogFilters,
   favorites: readonly string[],
   categories: readonly CategoryRef[] = []
-): Product[] {
+): T[] {
   const categoryNames = new Map(categories.map((c) => [c.slug, c.name]))
   const range = priceRanges.find((r) => r.value === filters.price)
 
@@ -140,11 +140,11 @@ export function applyFilters(
 }
 
 /** "Популярне" outranks "Новинка", and a product with both outranks either */
-function badgeRank(product: Product) {
+function badgeRank(product: ProductSummary) {
   return (product.isPopular ? 2 : 0) + (product.isNew ? 1 : 0)
 }
 
-const sorters: Record<SortValue, (a: Product, b: Product) => number> = {
+const sorters: Record<SortValue, (a: ProductSummary, b: ProductSummary) => number> = {
   // Manager-set badges first, then the newest products
   popular: (a, b) => badgeRank(b) - badgeRank(a) || b.addedAt.localeCompare(a.addedAt),
   new: (a, b) => b.addedAt.localeCompare(a.addedAt),
@@ -161,7 +161,7 @@ const sorters: Record<SortValue, (a: Product, b: Product) => number> = {
  * Ties fall back to popularity, then slug, so the order never depends on the
  * order rows come back from the database.
  */
-export function sortProducts(items: Product[], sort: SortValue, { search = false } = {}) {
+export function sortProducts<T extends ProductSummary>(items: T[], sort: SortValue, { search = false } = {}) {
   const giftsLast = !search && (sort === "popular" || sort === "new")
   return items.sort((a, b) => {
     const stock = Number(!isPurchasable(a.availability)) - Number(!isPurchasable(b.availability))
@@ -175,8 +175,8 @@ export function catalogTitle(category?: { name: string } | null) {
 }
 
 /** Quick search used by the header: purchasable and popular items first */
-export function searchProducts(
-  items: Product[],
+export function searchProducts<T extends ProductSummary>(
+  items: T[],
   query: string,
   limit?: number,
   categories: readonly CategoryRef[] = []
@@ -199,7 +199,7 @@ export function isRefinedListing(filters: CatalogFilters) {
   )
 }
 
-export function availabilityText(product: Pick<Product, "availability" | "leadDays">) {
+export function availabilityText(product: Pick<ProductSummary, "availability" | "leadDays">) {
   switch (product.availability) {
     case "in_stock":
       return "В наявності"
@@ -223,7 +223,7 @@ export function pluralize(count: number, [one, few, many]: [string, string, stri
   return many
 }
 
-export function discountPercent(product: Pick<Product, "price" | "oldPrice">) {
+export function discountPercent(product: Pick<ProductSummary, "price" | "oldPrice">) {
   if (!product.oldPrice || product.oldPrice <= product.price) return null
   return Math.round((1 - product.price / product.oldPrice) * 100)
 }
