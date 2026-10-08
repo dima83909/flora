@@ -15,19 +15,28 @@ const MAX_ORDERS_PER_PHONE = 5
 const MAX_ORDERS_PER_IP = 10
 const KEEP_MS = 24 * 60 * 60 * 1000
 
-export async function isOrderRateLimited(phone: string, ip: string | null) {
-  const db = getDb()
-  const since = new Date(Date.now() - WINDOW_MS)
-  const [byPhone, byIp] = await Promise.all([
-    db.orderAttempt.count({ where: { phone, createdAt: { gte: since } } }),
-    ip ? db.orderAttempt.count({ where: { ip, createdAt: { gte: since } } }) : 0,
-  ])
-  return byPhone >= MAX_ORDERS_PER_PHONE || byIp >= MAX_ORDERS_PER_IP
-}
+/** First key of the advisory locks below, so they cannot clash with locks taken for anything else */
+const LOCK_NAMESPACE = 41_710
 
-/** Records a placed order; call it inside the order transaction */
-export async function recordPlacedOrder(tx: Prisma.TransactionClient, phone: string, ip: string | null) {
+/**
+ * Checks the limits and records the order in one step; call it inside the order transaction.
+ * Transaction-scoped advisory locks on the phone and the address make concurrent orders from
+ * the same customer wait for each other, so a burst cannot all pass the count before the
+ * first one is written. The locks and the record go away with the transaction, so an order
+ * that fails later (an unavailable item) is not counted. Returns false when over the limit.
+ */
+export async function reserveOrderSlot(tx: Prisma.TransactionClient, phone: string, ip: string | null) {
+  // Always phone first, then address: a fixed order means two transactions never deadlock
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${LOCK_NAMESPACE}::int, hashtext(${`phone:${phone}`}))`
+  if (ip) await tx.$executeRaw`SELECT pg_advisory_xact_lock(${LOCK_NAMESPACE}::int, hashtext(${`ip:${ip}`}))`
+
+  const since = new Date(Date.now() - WINDOW_MS)
+  const byPhone = await tx.orderAttempt.count({ where: { phone, createdAt: { gte: since } } })
+  const byIp = ip ? await tx.orderAttempt.count({ where: { ip, createdAt: { gte: since } } }) : 0
+  if (byPhone >= MAX_ORDERS_PER_PHONE || byIp >= MAX_ORDERS_PER_IP) return false
+
   await tx.orderAttempt.create({ data: { phone, ip } })
+  return true
 }
 
 /** Opportunistic clean-up, so the table stays small without a scheduled job */

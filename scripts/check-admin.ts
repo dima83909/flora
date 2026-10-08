@@ -8,7 +8,7 @@
 import "dotenv/config"
 
 import { ORDER_STATUSES, ORDER_STATUS_TRANSITIONS, type OrderStatusValue } from "@/lib/order-status"
-import { checkLoginAllowed, clearLoginFailures, recordLoginFailure } from "@/server/admin/login-throttle"
+import { beginLoginAttempt, checkLoginAllowed, clearLoginFailures, recordLoginFailure } from "@/server/admin/login-throttle"
 import { hashPassword, verifyPassword } from "@/server/admin/password"
 import { getDb } from "@/server/db"
 import { cleanupExpired, purgeOrders } from "@/server/maintenance"
@@ -164,6 +164,16 @@ async function main() {
   await clearLoginFailures(manager, "203.0.113.7")
   check((await checkLoginAllowed(manager, "203.0.113.7")).allowed, "clearing an address did not lift its own limit")
   check((await db.adminLoginAttempt.count({ where: { login: manager } })) === 25, "clearing one address removed other addresses' failures")
+
+  // A burst of parallel attempts cannot all pass the check before the first failure lands
+  const burstLogin = `${login}-burst`
+  const burst = await Promise.all(Array.from({ length: 12 }, () => beginLoginAttempt(burstLogin, "203.0.113.9")))
+  const passed = burst.filter((decision) => decision.allowed).length
+  check(passed >= 1 && passed <= 5, `${passed} of 12 parallel sign-in attempts passed a limit of 5`)
+  check(
+    (await db.adminLoginAttempt.count({ where: { login: burstLogin } })) === passed,
+    "refused sign-in attempts were kept and would extend the block"
+  )
   await db.adminLoginAttempt.deleteMany({ where: { login: { startsWith: login } } })
 
   // 8. Housekeeping: expired sessions and stale rate-limit records go, current ones stay

@@ -3,7 +3,7 @@ import "server-only"
 import { MAX_QUANTITY } from "@/lib/cart-limits"
 import { customerFieldErrors, orderInputSchema, type CustomerField } from "@/lib/order-schema"
 import { getDb } from "@/server/db"
-import { isOrderRateLimited, purgeOldOrderAttempts, recordPlacedOrder } from "@/server/orders/rate-limit"
+import { purgeOldOrderAttempts, reserveOrderSlot } from "@/server/orders/rate-limit"
 
 export type UnavailableItem = {
   slug: string
@@ -22,6 +22,12 @@ export type CreateOrderResult =
 class UnavailableItemsError extends Error {
   constructor(readonly items: UnavailableItem[]) {
     super("Some items are unavailable")
+  }
+}
+
+class RateLimitedError extends Error {
+  constructor() {
+    super("Too many orders")
   }
 }
 
@@ -49,13 +55,6 @@ export async function createGuestOrder(
   if (website) {
     return { ok: false, reason: "error", message: "Не вдалося оформити замовлення. Спробуйте ще раз за кілька хвилин." }
   }
-  if (await isOrderRateLimited(customer.phone, ip)) {
-    return {
-      ok: false,
-      reason: "rate_limited",
-      message: "Забагато замовлень за короткий час. Спробуйте пізніше або напишіть нам у Telegram.",
-    }
-  }
 
   // A slug may appear once per order; merge accidental duplicates
   const quantities = new Map<string, number>()
@@ -71,6 +70,9 @@ export async function createGuestOrder(
 
   try {
     const order = await getDb().$transaction(async (tx) => {
+      // Counted and recorded together, under a lock; rolled back if the order fails below
+      if (!(await reserveOrderSlot(tx, customer.phone, ip))) throw new RateLimitedError()
+
       const products = await tx.product.findMany({
         where: { slug: { in: [...quantities.keys()] }, isActive: true, category: { isActive: true } },
         select: {
@@ -109,7 +111,6 @@ export async function createGuestOrder(
       })
       if (problems.length) throw new UnavailableItemsError(problems)
 
-      await recordPlacedOrder(tx, customer.phone, ip)
       return tx.order.create({
         data: {
           customerName: customer.name,
@@ -127,6 +128,13 @@ export async function createGuestOrder(
     await purgeOldOrderAttempts().catch(() => undefined)
     return { ok: true, number: order.number }
   } catch (error) {
+    if (error instanceof RateLimitedError) {
+      return {
+        ok: false,
+        reason: "rate_limited",
+        message: "Забагато замовлень за короткий час. Спробуйте пізніше або напишіть нам у Telegram.",
+      }
+    }
     if (error instanceof UnavailableItemsError) {
       return {
         ok: false,

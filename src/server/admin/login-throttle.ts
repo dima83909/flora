@@ -5,8 +5,13 @@ import { getDb } from "@/server/db"
 /*
  * Brute-force protection for the admin sign-in, backed by the database so it works
  * across server instances without extra infrastructure. Authentication only talks
- * to the three functions below, so this file can be swapped for Redis or an edge
- * rate limiter without touching the rest.
+ * to the functions below, so this file can be swapped for Redis or an edge rate
+ * limiter without touching the rest.
+ *
+ * An attempt is written before its password is checked and counted against the limits
+ * together with everyone else's, so a burst of parallel requests cannot all pass the
+ * check before the first failure lands. A wrong password leaves the row as a failure;
+ * a right one clears it.
  */
 
 const WINDOW_MS = 15 * 60 * 1000
@@ -32,11 +37,19 @@ function blockedUntil(attempts: { createdAt: Date }[], limit: number) {
  * `ip` is null when the client address is unknown (no trusted proxy). Failures then
  * count together under the null address, so the per-login limits still apply.
  */
-export async function checkLoginAllowed(login: string, ip: string | null): Promise<ThrottleDecision> {
+export async function checkLoginAllowed(
+  login: string,
+  ip: string | null,
+  { exceptId }: { exceptId?: string } = {}
+): Promise<ThrottleDecision> {
   const db = getDb()
   const recent = (where: { login?: string; ip?: string | null }, take: number) =>
     db.adminLoginAttempt.findMany({
-      where: { ...where, createdAt: { gte: new Date(Date.now() - WINDOW_MS) } },
+      where: {
+        ...where,
+        createdAt: { gte: new Date(Date.now() - WINDOW_MS) },
+        ...(exceptId ? { id: { not: exceptId } } : {}),
+      },
       orderBy: { createdAt: "desc" },
       take,
       select: { createdAt: true },
@@ -57,14 +70,37 @@ export async function checkLoginAllowed(login: string, ip: string | null): Promi
   return { allowed: false, retryAfterMinutes: Math.max(1, Math.ceil((until - Date.now()) / 60_000)) }
 }
 
-export async function recordLoginFailure(login: string, ip: string | null) {
+/**
+ * Starts a sign-in: records the attempt, then checks the limits with it in place, so
+ * concurrent attempts see each other. A refused attempt is removed again, so waiting
+ * out a block is enough; it does not extend the block.
+ */
+export async function beginLoginAttempt(login: string, ip: string | null): Promise<ThrottleDecision> {
   const db = getDb()
-  await db.adminLoginAttempt.create({ data: { login, ip } })
+  const { id } = await db.adminLoginAttempt.create({ data: { login, ip }, select: { id: true } })
+  const decision = await checkLoginAllowed(login, ip, { exceptId: id })
+  if (!decision.allowed) {
+    await db.adminLoginAttempt.deleteMany({ where: { id } })
+    return decision
+  }
   // Opportunistic clean-up keeps the table small without a scheduled job
-  await db.adminLoginAttempt.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - KEEP_MS) } } })
+  await purgeOldLoginAttempts()
+  return { allowed: true }
 }
 
-/** A successful sign-in forgives earlier typos from the same address, not other people's guesses */
+/** Records a failed attempt outright; used by checks to set up a throttled state */
+export async function recordLoginFailure(login: string, ip: string | null) {
+  await getDb().adminLoginAttempt.create({ data: { login, ip } })
+}
+
+async function purgeOldLoginAttempts() {
+  await getDb().adminLoginAttempt.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - KEEP_MS) } } })
+}
+
+/**
+ * A successful sign-in forgives earlier typos from the same address, its own attempt
+ * included, but not other people's guesses
+ */
 export async function clearLoginFailures(login: string, ip: string | null) {
   await getDb().adminLoginAttempt.deleteMany({ where: { login, ip } })
 }

@@ -6,7 +6,7 @@ import { z } from "zod"
 
 import { getClientIp } from "@/server/client-ip"
 import { getDb } from "@/server/db"
-import { checkLoginAllowed, clearLoginFailures, recordLoginFailure } from "@/server/admin/login-throttle"
+import { beginLoginAttempt, clearLoginFailures } from "@/server/admin/login-throttle"
 import { decoyHash, PASSWORD_MAX_LENGTH, verifyPassword } from "@/server/admin/password"
 import { createSession, destroySession, readSession } from "@/server/admin/session"
 
@@ -45,8 +45,9 @@ export async function signIn(input: unknown): Promise<SignInResult> {
   const { login, password } = parsed.data
 
   const ip = await getClientIp()
-  const throttle = await checkLoginAllowed(login, ip)
-  if (!throttle.allowed) return { ok: false, reason: "throttled", retryAfterMinutes: throttle.retryAfterMinutes }
+  // Counted before the password is checked, so parallel guesses cannot slip past the limit
+  const attempt = await beginLoginAttempt(login, ip)
+  if (!attempt.allowed) return { ok: false, reason: "throttled", retryAfterMinutes: attempt.retryAfterMinutes }
 
   const admin = await getDb().adminUser.findUnique({
     where: { login },
@@ -54,10 +55,8 @@ export async function signIn(input: unknown): Promise<SignInResult> {
   })
   // Unknown and inactive logins cost the same time and give the same answer
   const valid = await verifyPassword(password, admin?.passwordHash ?? (await decoyHash()))
-  if (!admin || !admin.isActive || !valid) {
-    await recordLoginFailure(login, ip)
-    return { ok: false, reason: "invalid" }
-  }
+  // The recorded attempt stays as a failure
+  if (!admin || !admin.isActive || !valid) return { ok: false, reason: "invalid" }
 
   await clearLoginFailures(login, ip)
   await getDb().adminUser.update({ where: { id: admin.id }, data: { lastLoginAt: new Date() } })

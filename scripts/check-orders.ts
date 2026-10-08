@@ -153,7 +153,24 @@ async function main() {
     "a placed order should be recorded with its address"
   )
 
-  console.log(`Checked guest orders: ${invalid.length + 6} scenarios, ${created.length} test orders created.`)
+  // A burst of parallel orders from one phone cannot all pass the count before the first is written
+  const burstPhone = "+380509990007"
+  const burst = await Promise.all(
+    Array.from({ length: 8 }, () => place({ customer: { ...customer, phone: burstPhone }, items: line }))
+  )
+  const burstPlaced = burst.filter((result) => result.ok).length
+  check(
+    burstPlaced === 5 && burst.every((result) => result.ok || result.reason === "rate_limited"),
+    `8 parallel orders from one phone should place exactly 5, placed ${burstPlaced}`
+  )
+  check((await db.orderAttempt.count({ where: { phone: burstPhone } })) === 5, "a refused parallel order was counted")
+
+  // An order refused for an unavailable item is rolled back together with its count
+  const unluckyPhone = "+380509990008"
+  await place({ customer: { ...customer, phone: unluckyPhone }, items: [{ slug: "no-such-product", quantity: 1 }] })
+  check((await db.orderAttempt.count({ where: { phone: unluckyPhone } })) === 0, "an order with unavailable items was counted")
+
+  console.log(`Checked guest orders: ${invalid.length + 8} scenarios, ${created.length} test orders created.`)
   check((await db.order.count()) === ordersBefore + created.length, "unexpected orders were created")
 }
 
