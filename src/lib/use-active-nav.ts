@@ -22,7 +22,8 @@ export function useActiveNavHref(items: NavItem[]): string | null {
     return inMenu(searchParams.get("category")) ?? "/bouquets"
   }
   if (pathname.startsWith("/bouquets/")) {
-    const product = getProduct(decodeURIComponent(pathname.split("/")[2] ?? ""))
+    // Slugs are Latin, so the segment needs no decoding (and a broken encoding cannot throw)
+    const product = getProduct(pathname.split("/")[2] ?? "")
     return inMenu(product?.category) ?? "/bouquets"
   }
   return null

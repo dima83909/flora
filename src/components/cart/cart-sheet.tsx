@@ -17,11 +17,27 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { pluralize } from "@/lib/catalog"
-import { cartActions, useCartCount, useCartLines, useCartOpen } from "@/lib/stores/cart"
+import { cartActions, useCartLines, useCartOpen } from "@/lib/stores/cart"
 import { formatPrice } from "@/lib/utils"
 
+/**
+ * Cart lines matched against the published catalogue. Lines whose product is hidden or
+ * deleted stay in storage (the product may come back) but are not counted or priced.
+ */
+function useCartItems() {
+  const lines = useCartLines()
+  const { getProduct } = useCatalog()
+  const items = lines.flatMap((line) => {
+    const product = getProduct(line.slug)
+    return product ? [{ ...line, product }] : []
+  })
+  const unavailable = lines.filter((line) => !getProduct(line.slug)).map((line) => line.slug)
+  const count = items.reduce((sum, item) => sum + item.quantity, 0)
+  return { items, unavailable, count }
+}
+
 export function CartButton() {
-  const count = useCartCount()
+  const { count } = useCartItems()
   return (
     <Button
       variant="ghost"
@@ -42,15 +58,7 @@ export function CartButton() {
 
 export function CartSheet() {
   const open = useCartOpen()
-  const lines = useCartLines()
-  const count = useCartCount()
-  const { getProduct } = useCatalog()
-
-  // Lines whose product is no longer published are left out
-  const items = lines.flatMap((line) => {
-    const product = getProduct(line.slug)
-    return product ? [{ ...line, product }] : []
-  })
+  const { items, unavailable, count } = useCartItems()
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
 
   return (
@@ -62,6 +70,23 @@ export function CartSheet() {
             {count ? `${count} ${pluralize(count, ["товар", "товари", "товарів"])}` : "Тут поки порожньо"}
           </SheetDescription>
         </SheetHeader>
+
+        {unavailable.length ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-petal/60 px-6 py-3 text-sm text-ink">
+            <span>
+              {unavailable.length === 1
+                ? "Один товар із кошика більше недоступний."
+                : "Кілька товарів із кошика більше недоступні."}
+            </span>
+            <button
+              type="button"
+              onClick={() => unavailable.forEach((slug) => cartActions.remove(slug))}
+              className="inline-flex items-center underline underline-offset-4 hover:text-stem any-pointer-coarse:min-h-11"
+            >
+              Прибрати
+            </button>
+          </div>
+        ) : null}
 
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-start justify-center gap-5 px-6">

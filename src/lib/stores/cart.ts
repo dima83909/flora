@@ -48,10 +48,6 @@ export function useCartLines() {
   return cartStore.useStore((lines) => lines)
 }
 
-export function useCartCount() {
-  return cartStore.useStore((lines) => lines.reduce((sum, l) => sum + l.quantity, 0))
-}
-
 export function useCartOpen() {
   return cartUiStore.useStore((s) => s.open)
 }
