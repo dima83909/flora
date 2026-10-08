@@ -10,8 +10,8 @@ import "dotenv/config"
 import { isDeepStrictEqual } from "node:util"
 
 import { careByCategory } from "../prisma/seed-data/care"
-import { categories as mockCategories, products as fixtureProducts } from "../prisma/seed-data/catalog"
-import { seedPhotos } from "../prisma/seed-data/photos"
+import { categories as fixtureCategories, products as fixtureProducts } from "../prisma/seed-data/catalog"
+import { readPhotoManifest, seedPhotos } from "../prisma/seed-data/photos"
 import { applyFilters, DEFAULT_SORT, sortOptions, sortProducts, priceRanges, type CatalogFilters } from "@/lib/catalog"
 import type { Product } from "@/types/catalog"
 import {
@@ -24,7 +24,11 @@ import {
 } from "@/server/catalog"
 import { getDb } from "@/server/db"
 
-// The seed adds per-category care tips and the photographs found on disk to every fixture product,
+// Category tiles name a seed photo by its original path; the seed stores its Blob URL instead
+const photoManifest = readPhotoManifest()
+const mockCategories = fixtureCategories.map((c) => (c.image ? { ...c, image: photoManifest[c.image] ?? c.image } : c))
+
+// The seed adds per-category care tips and the seed photos (photos.json) to every fixture product,
 // and creates it at midnight UTC of its fixture date
 const mockProducts: Product[] = fixtureProducts.map((p) => {
   const images = p.images?.length ? p.images : seedPhotos(p.slug)

@@ -2,6 +2,9 @@
   "name": "flora",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -19,8 +22,6 @@
     "admin:create": "tsx --conditions=react-server scripts/create-admin.ts",
     "maintenance:cleanup": "tsx --conditions=react-server scripts/cleanup.ts",
     "orders:purge": "tsx --conditions=react-server scripts/purge-orders.ts",
-    "photos:upload-seed": "tsx --conditions=react-server scripts/upload-seed-photos.ts",
-    "photos:switch-seed-urls": "tsx --conditions=react-server scripts/switch-seed-photo-urls.ts",
     "photos:backfill-cards": "tsx --conditions=react-server scripts/backfill-card-photos.ts"
   },
   "dependencies": {

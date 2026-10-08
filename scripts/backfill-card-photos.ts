@@ -1,5 +1,6 @@
 /**
- * Creates card thumbnails for photos that were stored in Blob before thumbnails existed.
+ * Creates missing card thumbnails: for photos stored before thumbnails existed, or whose
+ * thumbnail failed during an upload (the upload itself still succeeds).
  *
  *   npm run photos:backfill-cards
  *

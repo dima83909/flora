@@ -4,6 +4,8 @@
 
 ## Команди
 
+Потрібен Node.js 24 (як у Vercel і CI, див. `engines` у `package.json`).
+
 ```bash
 npm run dev     # dev-сервер на http://localhost:3000
 npm run build   # production build
@@ -64,7 +66,9 @@ npm run db:check     # перевірити дані й фільтри ката�
 
 Seed безпечно запускати повторно: він лише додає категорії й товари, яких ще немає (за slug), і не чіпає
 наявні записи, тож ціни, наявність і видимість, змінені в базі, зберігаються. Товар без жодного фото отримує
-фото, знайдені в `public/images/products/<slug>`. Нічого не видаляється.
+свої seed-фото: їхні файли лежать у production-сховищі Blob, а `prisma/seed-data/photos.json` зіставляє кожне
+з адресою (ключ — початковий шлях `/images/products/<slug>/…`, ним же фікстури позначають фото категорій).
+Нічого не видаляється.
 
 Щоб перезаписати наявні записи й галереї значеннями з `prisma/seed-data` (після правки фікстур), запустіть
 `SEED_OVERWRITE=1 npm run db:seed`. Усі правки, зроблені в базі вручну, при цьому буде втрачено.
@@ -191,11 +195,15 @@ ADMIN_LOGIN=manager ADMIN_NAME="Ім'я менеджера" ADMIN_PASSWORD='не
   сесію, Origin, тип, розмір (до 3,5 МБ) і перші байти файлу. Окремий route handler потрібен, щоб більший ліміт
   тіла запиту стосувався лише фото: server actions, зокрема оформлення замовлення, лишаються з типовим 1 МБ.
 - Перше фото — головне (картка товару); порядок змінюється стрілками, фото видаляються одразу разом із файлом.
-  Видалення товару прибирає і його файли. Фото з `public/images/products` (seed) лишаються у репозиторії.
+  Видалення товару прибирає і його файли.
+- Для карток каталогу поруч з оригіналом зберігається мініатюра `<назва>-card.webp` (800 px), яку браузер кешує
+  на рік. Якщо її не вдалося створити під час завантаження, картка показує оригінал, а
+  `npm run photos:backfill-cards` догенерує відсутні мініатюри.
 - Авторизація в Blob — через OIDC: на Vercel автоматично, локально — `vercel link` і `vercel env pull .env.local`
   (див. `.env.example`). Для Development під'єднане окреме сховище `flora-blob-dev`, тож фото, завантажені
-  локально, у production не потрапляють, а локальне видалення не зачепить production-файли. Скриптам, які мають
-  працювати з production-фото (`photos:*`), потрібні змінні Production: `vercel env pull --environment=production`.
+  локально, у production не потрапляють, а локальне видалення не зачепить production-файли. Щоб
+  `photos:backfill-cards` працював з production-фото, йому потрібні змінні Production:
+  `vercel env pull --environment=production`.
 
 `npm run db:check` також перевіряє хешування паролів, усі 25 пар переходів статусів, нотатки,
 пошук і ліміт спроб входу, а також редагування каталогу (валідацію, slug, конфлікт правок,
@@ -204,7 +212,8 @@ ADMIN_LOGIN=manager ADMIN_NAME="Ім'я менеджера" ADMIN_PASSWORD='не
 
 ## Обслуговування даних
 
-Дві команди читають `DATABASE_URL` (для production підставте її в команді, як і для `admin:create`).
+Дві команди читають `DATABASE_URL` з `.env`; для production — з `.env.prod` через `DOTENV_PATH=.env.prod`, як і
+`admin:create`.
 Логіка в `src/server/maintenance.ts`.
 
 ```bash
@@ -248,7 +257,7 @@ PURGE_MONTHS=24 PURGE_CONFIRM=1 npm run orders:purge  # видалити
   тож `DATABASE_URL` має бути доступна на етапі Build, а база — вже з міграціями й каталогом.
 - **Міграції не запускаються автоматично.** Перед deploy, який змінює схему, виконайте `npm run db:deploy`
   зі своєї машини з production-рядком підключення.
-- **Seed запускається з репозиторію**, бо підключає фото, які знайшов у `public/images/products`.
+- **Seed запускається з репозиторію:** фікстури й `photos.json` лежать у `prisma/seed-data`.
   На production не використовуйте `SEED_OVERWRITE=1`, якщо каталог уже правили в базі.
 - **`npm run db:check` не для production-бази:** він створює й видаляє тестові замовлення.
 - Prisma Client генерується в `postinstall`; для цього база не потрібна.
@@ -256,13 +265,15 @@ PURGE_MONTHS=24 PURGE_CONFIRM=1 npm run orders:purge  # видалити
 Перший deploy:
 
 ```bash
-# 1. схема й каталог у production-базі. Усі три команди читають DATABASE_URL;
-#    для міграцій підставте пряме (не pooled) підключення
-DATABASE_URL='<direct production url>' npm run db:deploy
-DATABASE_URL='<direct production url>' npm run db:seed
+# Production-рядки підключення лежать у .env.prod (не комітиться, нічим не завантажується автоматично):
+# DATABASE_URL (pooled) і DIRECT_URL (пряме, його Prisma CLI бере для міграцій)
+
+# 1. схема й каталог у production-базі
+DOTENV_PATH=.env.prod npm run db:deploy
+DOTENV_PATH=.env.prod npm run db:seed
 
 # 2. адміністратор
-DATABASE_URL='<direct production url>' ADMIN_LOGIN=<login> ADMIN_NAME='<name>' ADMIN_PASSWORD='<12+ символів>' npm run admin:create
+DOTENV_PATH=.env.prod ADMIN_LOGIN=<login> ADMIN_NAME='<name>' ADMIN_PASSWORD='<12+ символів>' npm run admin:create
 ```
 
 Після цього додайте змінні у Vercel і запустіть deploy (framework preset Next.js, команди збірки за замовчуванням).
@@ -277,7 +288,7 @@ DATABASE_URL='<direct production url>' ADMIN_LOGIN=<login> ADMIN_NAME='<name>' A
 - `/order-success/[number]` — підтвердження замовлення (noindex)
 - `/admin/login`, `/admin/orders`, `/admin/orders/[number]`, `/admin/products`, `/admin/products/new`,
   `/admin/products/[id]` — адмін-панель (noindex, закрита в robots.txt)
-- `/sitemap.xml`, `/robots.txt`
+- `/sitemap.xml` (головна, каталог, категорії, товари; порожній, поки не задано `NEXT_PUBLIC_SITE_URL`), `/robots.txt`
 
 ## Структура
 

@@ -3,8 +3,9 @@
  *
  * Safe to re-run: by default it only adds categories and products that are missing
  * (matched by slug) and leaves existing rows alone, so prices, availability and visibility
- * edited in the database survive. A product that has no photos yet still gets the
- * ones found on disk. Nothing is deleted, because orders may reference existing products.
+ * edited in the database survive. A product that has no photos yet still gets its seed
+ * photos (prisma/seed-data/photos.json). Nothing is deleted, because orders may reference
+ * existing products.
  *
  * SEED_OVERWRITE=1 makes the fixtures win: existing rows and their galleries are reset
  * to what prisma/seed-data says. Use it after editing the fixtures, never by habit.
@@ -109,7 +110,7 @@ async function main() {
       // A kept product only gains photos while its gallery is empty; it never loses any
       if (keep && existing._count.images > 0) continue
 
-      // The stored gallery mirrors the fixtures, or else the photographs found on disk
+      // The stored gallery mirrors the fixtures, or else the product's seed photos
       const images = product.images?.length ? product.images : seedPhotos(product.slug)
       if (!keep) await tx.productImage.deleteMany({ where: { productId: row.id } })
       if (images.length) {
