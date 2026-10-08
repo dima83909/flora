@@ -16,8 +16,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { pluralize } from "@/lib/catalog"
 import { cartActions, useCartLines, useCartOpen } from "@/lib/stores/cart"
+import { pluralize } from "@/lib/text"
 import { formatPrice } from "@/lib/utils"
 
 /**

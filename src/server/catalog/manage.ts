@@ -9,6 +9,7 @@ import {
   type ProductFormData,
 } from "@/lib/product-schema"
 import { slugify } from "@/lib/slug"
+import { normalizeSearchQuery } from "@/lib/text"
 import { blobStorage, removeStoredFiles, type ImageStorage } from "@/server/catalog/images"
 import { getDb } from "@/server/db"
 
@@ -34,7 +35,7 @@ export type AdminProductSearch = {
 }
 
 function searchWhere({ query, categoryId, availability, visibility }: AdminProductSearch): Prisma.ProductWhereInput {
-  const q = query?.trim().replace(/\s+/g, " ").slice(0, 100)
+  const q = normalizeSearchQuery(query)
   return {
     ...(q
       ? {
@@ -52,7 +53,7 @@ function searchWhere({ query, categoryId, availability, visibility }: AdminProdu
 }
 
 /** Newest first, with what the list shows: category, main photo */
-export async function searchProducts({ skip = 0, take = 25, ...filters }: AdminProductSearch = {}) {
+export async function findAdminProducts({ skip = 0, take = 25, ...filters }: AdminProductSearch = {}) {
   const where = searchWhere(filters)
   const db = getDb()
   const [products, total] = await Promise.all([

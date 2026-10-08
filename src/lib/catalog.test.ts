@@ -8,7 +8,6 @@ import {
   filtersToSearch,
   isRefinedListing,
   parseFilters,
-  pluralize,
   productMatchesQuery,
   searchProducts,
   sortProducts,
@@ -266,23 +265,6 @@ describe("searchProducts", () => {
       product({ slug: "chocolates", name: "Шоколад", category: "gifts", popularity: 9 }),
     ]
     expect(searchProducts(mixed, "шоколад", 1).map((p) => p.slug)).toEqual(["chocolates"])
-  })
-})
-
-describe("pluralize", () => {
-  const forms: [string, string, string] = ["товар", "товари", "товарів"]
-  it.each([
-    [1, "товар"],
-    [2, "товари"],
-    [4, "товари"],
-    [5, "товарів"],
-    [11, "товарів"],
-    [12, "товарів"],
-    [21, "товар"],
-    [22, "товари"],
-    [25, "товарів"],
-  ])("uses the right form for %i", (count, expected) => {
-    expect(pluralize(count, forms)).toBe(expected)
   })
 })
 

@@ -14,8 +14,8 @@ import {
   countFeaturedProducts,
   createProduct,
   deleteProduct,
+  findAdminProducts,
   getProductById,
-  searchProducts,
   updateProduct,
 } from "@/server/catalog/manage"
 import { getDb } from "@/server/db"
@@ -125,10 +125,10 @@ async function main() {
   check((await countFeaturedProducts(created.id)) === featured - 1, "featured count does not exclude the edited product")
 
   // 6. Search and filters in the admin list
-  const found = await searchProducts({ query: "інша НАЗВА" })
+  const found = await findAdminProducts({ query: "інша НАЗВА" })
   check(found.products.some((p) => p.id === created.id), "search by name is not case-insensitive")
-  check((await searchProducts({ query: SLUG })).total === 2, "search by slug should find both test products")
-  const preorders = await searchProducts({ query: SLUG, availability: "PREORDER" })
+  check((await findAdminProducts({ query: SLUG })).total === 2, "search by slug should find both test products")
+  const preorders = await findAdminProducts({ query: SLUG, availability: "PREORDER" })
   check(preorders.total === 1 && preorders.products[0].id === created.id, "availability filter wrong")
 
   // 7. Hiding removes it from the storefront but not from the admin list
@@ -136,9 +136,9 @@ async function main() {
   const hiddenNow = await updateProduct(created.id, visible, await form({ name: "Інша назва", isActive: false }))
   check(hiddenNow.ok, `hiding failed: ${JSON.stringify(hiddenNow)}`)
   check((await getProductBySlug(SLUG)) === null, "a hidden product is still on the storefront")
-  const hidden = await searchProducts({ query: SLUG, visibility: "hidden" })
+  const hidden = await findAdminProducts({ query: SLUG, visibility: "hidden" })
   check(hidden.total === 1 && hidden.products[0].id === created.id, "hidden filter wrong")
-  const visibleCount = (await searchProducts({ query: SLUG, visibility: "active" })).total
+  const visibleCount = (await findAdminProducts({ query: SLUG, visibility: "active" })).total
   check(visibleCount === 1, `active filter should find only the twin, found ${visibleCount}`)
   const hiddenAt = (await getProductById(created.id))!.updatedAt
   const shown = await updateProduct(created.id, hiddenAt, await form({ name: "Інша назва", isActive: true }))

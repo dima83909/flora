@@ -20,7 +20,7 @@ import {
   getProductBySlug,
   getProducts,
   getRelatedProducts,
-  searchProducts,
+  searchCatalog,
 } from "@/server/catalog"
 import { getDb } from "@/server/db"
 
@@ -90,7 +90,7 @@ async function main() {
     check(isDeepStrictEqual(actual, expected), `filter ${JSON.stringify(filters)}: ${actual} ≠ ${expected}`)
   }
 
-  const search = await searchProducts("півонії", 2)
+  const search = await searchCatalog("півонії", 2)
   check(search.length === 2, `search limit should return 2 items, got ${search.length}`)
 
   // "Running low" is set by a manager; no fixture has it, so one product is marked and restored

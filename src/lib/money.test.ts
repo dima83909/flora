@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { fromMinor, toMinor } from "@/lib/money"
+import { formatMinor, fromMinor, toMinor } from "@/lib/money"
 
 describe("money", () => {
   it("converts between hryvnias and kopiykas", () => {
@@ -15,5 +15,18 @@ describe("money", () => {
 
   it("round-trips whole kopiykas", () => {
     for (const minor of [0, 1, 99, 100, 123456]) expect(toMinor(fromMinor(minor))).toBe(minor)
+  })
+})
+
+describe("formatMinor", () => {
+  const plain = (text: string) => text.replace(/\s/g, " ")
+
+  it("shows whole hryvnias without decimals and keeps kopiykas", () => {
+    expect(plain(formatMinor(245000))).toBe("2 450 ₴")
+    expect(plain(formatMinor(185050))).toBe("1 850,50 ₴")
+  })
+
+  it("keeps the sign on the number's line", () => {
+    expect(formatMinor(100)).toMatch(/\u00a0₴$/)
   })
 })

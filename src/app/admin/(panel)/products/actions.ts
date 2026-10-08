@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation"
 
+import { isRecordId } from "@/lib/ids"
 import type { ProductField } from "@/lib/product-schema"
 import { requireAdmin } from "@/server/admin/auth"
 import {
@@ -28,8 +29,6 @@ export type ProductFormState = {
 
 const BAD_REQUEST = { ok: false, message: "Некоректний запит. Оновіть сторінку й спробуйте ще раз." }
 
-const isId = (value: unknown): value is string => typeof value === "string" && /^[a-z0-9]{1,100}$/i.test(value)
-
 function parseDate(value: unknown) {
   if (typeof value !== "string") return null
   const date = new Date(value)
@@ -51,7 +50,7 @@ export async function saveProduct(_previous: ProductFormState, payload: unknown)
   }
 
   const seen = parseDate(updatedAt)
-  if (!isId(id) || !seen) return BAD_REQUEST
+  if (!isRecordId(id) || !seen) return BAD_REQUEST
 
   const result = await updateAdminProduct(id, seen, values)
   if (result.ok) return { ok: true, message: "Зміни збережено, вони вже на сайті." }
@@ -75,7 +74,7 @@ export async function deleteProduct(_previous: ProductFormState, formData: unkno
   if (!(formData instanceof FormData)) return BAD_REQUEST
 
   const id = formData.get("id")
-  if (!isId(id)) return BAD_REQUEST
+  if (!isRecordId(id)) return BAD_REQUEST
 
   const result = await deleteAdminProduct(id)
   if (!result.ok) return { ok: false, message: "Товар уже видалено." }
@@ -88,7 +87,7 @@ const STALE_PHOTOS = "Фото товару щойно змінилися. Ст�
 
 export async function removeProductImage(productId: unknown, imageId: unknown): Promise<ImageActionResult> {
   await requireAdmin()
-  if (!isId(productId) || !isId(imageId)) return BAD_REQUEST
+  if (!isRecordId(productId) || !isRecordId(imageId)) return BAD_REQUEST
   const deleted = await deleteAdminProductImage(productId, imageId)
   return deleted ? { ok: true } : { ok: false, message: STALE_PHOTOS }
 }
@@ -96,7 +95,7 @@ export async function removeProductImage(productId: unknown, imageId: unknown): 
 /** Saves the gallery order; the first photo is the one on product cards */
 export async function reorderProductImages(productId: unknown, imageIds: unknown): Promise<ImageActionResult> {
   await requireAdmin()
-  if (!isId(productId) || !Array.isArray(imageIds) || imageIds.length > 100 || !imageIds.every(isId)) return BAD_REQUEST
+  if (!isRecordId(productId) || !Array.isArray(imageIds) || imageIds.length > 100 || !imageIds.every(isRecordId)) return BAD_REQUEST
   const reordered = await reorderAdminProductImages(productId, imageIds)
   return reordered ? { ok: true } : { ok: false, message: STALE_PHOTOS }
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
+import { isOrderNumber, parseOrderNumber } from "@/lib/ids"
 import { isOrderStatus, MANAGER_NOTE_MAX, ORDER_STATUS_LABELS } from "@/lib/order-status"
 import { requireAdmin } from "@/server/admin/auth"
 import {
@@ -21,10 +22,6 @@ export type ActionState = { ok: boolean; message: string } | null
 
 const BAD_REQUEST: ActionState = { ok: false, message: "Некоректний запит. Оновіть сторінку й спробуйте ще раз." }
 
-function parseNumber(value: FormDataEntryValue | null) {
-  return typeof value === "string" && /^[1-9]\d{0,8}$/.test(value) ? Number(value) : null
-}
-
 function refresh(number: number) {
   revalidatePath("/admin/orders")
   revalidatePath(`/admin/orders/${number}`)
@@ -34,7 +31,7 @@ export async function changeOrderStatus(_previous: ActionState, formData: unknow
   await requireAdmin()
   if (!(formData instanceof FormData)) return BAD_REQUEST
 
-  const number = parseNumber(formData.get("number"))
+  const number = parseOrderNumber(formData.get("number"))
   const from = formData.get("from")
   const to = formData.get("to")
   if (number === null || !isOrderStatus(from) || !isOrderStatus(to)) {
@@ -68,7 +65,7 @@ export async function saveManagerNote(_previous: ActionState, formData: unknown)
   await requireAdmin()
   if (!(formData instanceof FormData)) return BAD_REQUEST
 
-  const number = parseNumber(formData.get("number"))
+  const number = parseOrderNumber(formData.get("number"))
   const raw = formData.get("note")
   if (number === null || typeof raw !== "string") {
     return BAD_REQUEST
@@ -91,7 +88,7 @@ export async function deleteOrder(_previous: ActionState, formData: unknown): Pr
   await requireAdmin()
   if (!(formData instanceof FormData)) return BAD_REQUEST
 
-  const number = parseNumber(formData.get("number"))
+  const number = parseOrderNumber(formData.get("number"))
   const status = formData.get("status")
   if (number === null || !isOrderStatus(status)) return BAD_REQUEST
 
@@ -119,6 +116,6 @@ export async function deleteOrder(_previous: ActionState, formData: unknown): Pr
 export async function getOrdersVersion(number?: unknown): Promise<string> {
   await requireAdmin()
   if (number === undefined || number === null) return getAdminOrdersVersion()
-  if (typeof number !== "number" || !Number.isSafeInteger(number) || number < 1 || number > 999_999_999) return "invalid"
+  if (!isOrderNumber(number)) return "invalid"
   return getAdminOrdersVersion(number)
 }

@@ -171,7 +171,7 @@ export function filterProducts(filters: ProductFilters): Promise<Product[]> {
 }
 
 /** Text search across name, composition, stems and category; not cached, used by checks */
-export async function searchProducts(query: string, limit?: number): Promise<Product[]> {
+export async function searchCatalog(query: string, limit?: number): Promise<Product[]> {
   if (!query.trim()) return []
   const found = await findProducts({ query })
   return limit ? found.slice(0, limit) : found

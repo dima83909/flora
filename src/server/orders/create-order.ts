@@ -1,5 +1,6 @@
 import "server-only"
 
+import { Prisma } from "@/generated/prisma/client"
 import { MAX_QUANTITY } from "@/lib/cart-limits"
 import { customerFieldErrors, orderInputSchema, type CustomerField } from "@/lib/order-schema"
 import { getDb } from "@/server/db"
@@ -31,6 +32,26 @@ class RateLimitedError extends Error {
   }
 }
 
+const GENERIC_ERROR = "Не вдалося оформити замовлення. Спробуйте ще раз за кілька хвилин."
+
+/**
+ * The order already placed with this checkout key, if any. A key that came with another
+ * phone number is refused: it is not this customer's order to report.
+ */
+async function placedWithKey(key: string, phone: string): Promise<CreateOrderResult | null> {
+  const order = await getDb().order.findUnique({
+    where: { idempotencyKey: key },
+    select: { number: true, customerPhone: true },
+  })
+  if (!order) return null
+  if (order.customerPhone !== phone) return { ok: false, reason: "error", message: GENERIC_ERROR }
+  return { ok: true, number: order.number }
+}
+
+function isDuplicateKey(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"
+}
+
 /**
  * Creates a guest order. The browser sends only product slugs, quantities and
  * contact details; prices, availability and the subtotal come from PostgreSQL,
@@ -49,11 +70,18 @@ export async function createGuestOrder(
       fieldErrors: customerFieldErrors(parsed.error),
     }
   }
-  const { customer, items, website } = parsed.data
+  const { customer, items, website, idempotencyKey } = parsed.data
 
   // Only a bot fills the hidden field; answer like any failure so it learns nothing
   if (website) {
-    return { ok: false, reason: "error", message: "Не вдалося оформити замовлення. Спробуйте ще раз за кілька хвилин." }
+    return { ok: false, reason: "error", message: GENERIC_ERROR }
+  }
+
+  // A retry after the browser lost the response: answer with the order placed the first time.
+  // Checked before the rate limit, so the retry does not count as another order
+  if (idempotencyKey) {
+    const placed = await placedWithKey(idempotencyKey, customer.phone)
+    if (placed) return placed
   }
 
   // A slug may appear once per order; merge accidental duplicates
@@ -119,6 +147,7 @@ export async function createGuestOrder(
           customerComment: customer.comment ?? null,
           subtotalMinor: lines.reduce((sum, line) => sum + line.totalMinor, 0),
           currency: "UAH",
+          idempotencyKey: idempotencyKey ?? null,
           items: { create: lines },
         },
         select: { number: true },
@@ -135,6 +164,11 @@ export async function createGuestOrder(
         message: "Забагато замовлень за короткий час. Спробуйте пізніше або напишіть нам у Telegram.",
       }
     }
+    // The same submission arrived twice at once and the other copy won: report its order
+    if (idempotencyKey && isDuplicateKey(error)) {
+      const placed = await placedWithKey(idempotencyKey, customer.phone)
+      if (placed) return placed
+    }
     if (error instanceof UnavailableItemsError) {
       return {
         ok: false,
@@ -144,10 +178,6 @@ export async function createGuestOrder(
       }
     }
     console.error("Failed to create guest order", error)
-    return {
-      ok: false,
-      reason: "error",
-      message: "Не вдалося оформити замовлення. Спробуйте ще раз за кілька хвилин.",
-    }
+    return { ok: false, reason: "error", message: GENERIC_ERROR }
   }
 }

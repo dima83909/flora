@@ -199,28 +199,17 @@ export function isRefinedListing(filters: CatalogFilters) {
   )
 }
 
-export function availabilityText(product: Pick<ProductSummary, "availability" | "leadDays">) {
-  switch (product.availability) {
-    case "in_stock":
-      return "В наявності"
-    case "low_stock":
-      return "Закінчується"
-    case "preorder":
-      // The lead time is not shown until real supply terms are confirmed
-      return "Під замовлення"
-    case "out_of_stock":
-      return "Немає в наявності"
-  }
+/** Stock status as customers and managers read it */
+export const AVAILABILITY_LABELS: Record<Availability, string> = {
+  in_stock: "В наявності",
+  low_stock: "Закінчується",
+  preorder: "Під замовлення",
+  out_of_stock: "Немає в наявності",
 }
 
-const pluralRules = new Intl.PluralRules("uk")
-
-/** Ukrainian plural forms: [one, few, many] e.g. ["товар", "товари", "товарів"] */
-export function pluralize(count: number, [one, few, many]: [string, string, string]) {
-  const rule = pluralRules.select(count)
-  if (rule === "one") return one
-  if (rule === "few") return few
-  return many
+export function availabilityText(product: Pick<ProductSummary, "availability" | "leadDays">) {
+  // A preorder's lead time is not shown until real supply terms are confirmed
+  return AVAILABILITY_LABELS[product.availability]
 }
 
 export function discountPercent(product: Pick<ProductSummary, "price" | "oldPrice">) {

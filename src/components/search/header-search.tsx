@@ -17,7 +17,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { pluralize, searchProducts } from "@/lib/catalog"
+import { searchProducts } from "@/lib/catalog"
+import { pluralize } from "@/lib/text"
 
 const MAX_RESULTS = 5
 const SUGGESTIONS = ["Півонії", "Троянди", "Коробка", "Евкаліпт", "Тюльпани", "Свічка"]

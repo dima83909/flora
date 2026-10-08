@@ -1,12 +1,14 @@
 import "server-only"
 
 import type { Prisma } from "@/generated/prisma/client"
+import { isOrderNumber } from "@/lib/ids"
 import { canTransition, type OrderStatusValue } from "@/lib/order-status"
+import { normalizeSearchQuery } from "@/lib/text"
 import { getDb } from "@/server/db"
 
 /** Minimal public confirmation: the success page shows the number only, never customer data */
 export async function orderExists(number: number) {
-  if (!Number.isSafeInteger(number) || number < 1) return false
+  if (!isOrderNumber(number)) return false
   const order = await getDb().order.findUnique({ where: { number }, select: { id: true } })
   return order !== null
 }
@@ -19,7 +21,7 @@ export async function orderExists(number: number) {
 
 /** Matches an order number, or part of a customer name, city or phone */
 function searchWhere(query: string | undefined): Prisma.OrderWhereInput {
-  const q = query?.trim().replace(/\s+/g, " ").slice(0, 100)
+  const q = normalizeSearchQuery(query)
   if (!q) return {}
 
   const or: Prisma.OrderWhereInput[] = [

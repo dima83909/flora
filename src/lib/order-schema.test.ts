@@ -44,6 +44,13 @@ describe("orderInputSchema", () => {
     })
   })
 
+  it("accepts a checkout key and refuses anything that is not a UUID", () => {
+    const key = "3b241101-e2bb-4255-8caf-4136c566a962"
+    expect(orderInputSchema.parse({ customer, items: [line], idempotencyKey: key }).idempotencyKey).toBe(key)
+    expect(orderInputSchema.parse({ customer, items: [line] }).idempotencyKey).toBeUndefined()
+    expect(orderInputSchema.safeParse({ customer, items: [line], idempotencyKey: "x".repeat(36) }).success).toBe(false)
+  })
+
   it("turns a blank comment into undefined", () => {
     expect(orderInputSchema.parse({ customer: { ...customer, comment: "   " }, items: [line] }).customer.comment).toBeUndefined()
   })

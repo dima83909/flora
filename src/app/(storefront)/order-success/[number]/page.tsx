@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { CheckIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { parseOrderNumber } from "@/lib/ids"
 import { orderExists } from "@/server/orders/queries"
 
 export const metadata: Metadata = {
@@ -13,9 +14,8 @@ export const metadata: Metadata = {
 
 // Order numbers are sequential, so the page shows the number only, never customer data
 export default async function OrderSuccessPage({ params }: PageProps<"/order-success/[number]">) {
-  const { number: raw } = await params
-  const number = /^\d{1,9}$/.test(raw) ? Number(raw) : NaN
-  if (!(await orderExists(number))) notFound()
+  const number = parseOrderNumber((await params).number)
+  if (number === null || !(await orderExists(number))) notFound()
 
   return (
     <section className="container-page section-y">

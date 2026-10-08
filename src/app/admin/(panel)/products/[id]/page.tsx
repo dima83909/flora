@@ -8,23 +8,22 @@ import { ForgetSearchParams } from "@/components/admin/forget-search-params"
 import { ProductForm } from "@/components/admin/product-form"
 import { ProductImages } from "@/components/admin/product-images"
 import { formatFullDate } from "@/lib/admin-format"
+import { isRecordId } from "@/lib/ids"
 import { toFormValues } from "@/lib/product-schema"
 import { requireAdmin } from "@/server/admin/auth"
 import { countAdminFeaturedProducts, getAdminCategoryOptions, getAdminProduct } from "@/server/admin/products"
 
-const parseId = (raw: string) => (/^[a-z0-9]{1,100}$/i.test(raw) ? raw : null)
-
 export async function generateMetadata({ params }: PageProps<"/admin/products/[id]">): Promise<Metadata> {
-  const id = parseId((await params).id)
-  const product = id ? await getAdminProduct(id) : null
+  const { id } = await params
+  const product = isRecordId(id) ? await getAdminProduct(id) : null
   return { title: product?.name ?? "Товар" }
 }
 
 export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
   await requireAdmin()
 
-  const id = parseId((await params).id)
-  const product = id ? await getAdminProduct(id) : null
+  const { id } = await params
+  const product = isRecordId(id) ? await getAdminProduct(id) : null
   if (!product) notFound()
 
   const [categories, featured, { created }] = await Promise.all([

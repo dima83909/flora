@@ -1,4 +1,4 @@
-import { discountPercent } from "@/lib/catalog"
+import { AVAILABILITY_LABELS, discountPercent } from "@/lib/catalog"
 import { cn } from "@/lib/utils"
 import type { ProductSummary } from "@/types/catalog"
 
@@ -7,8 +7,8 @@ type Badge = { text: string; tone: "sale" | "new" | "popular" | "low" | "muted" 
 export function getBadges(product: ProductSummary): Badge[] {
   const badges: Badge[] = []
   const discount = discountPercent(product)
-  if (product.availability === "out_of_stock") badges.push({ text: "Немає в наявності", tone: "muted" })
-  if (product.availability === "low_stock") badges.push({ text: "Закінчується", tone: "low" })
+  if (product.availability === "out_of_stock") badges.push({ text: AVAILABILITY_LABELS.out_of_stock, tone: "muted" })
+  if (product.availability === "low_stock") badges.push({ text: AVAILABILITY_LABELS.low_stock, tone: "low" })
   if (discount) badges.push({ text: `−${discount}%`, tone: "sale" })
   // Promotional badges are noise on something that cannot be bought
   if (product.availability !== "out_of_stock") {

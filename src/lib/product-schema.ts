@@ -1,6 +1,8 @@
 import { z } from "zod"
 
+import { AVAILABILITY_LABELS } from "@/lib/catalog"
 import { toMinor } from "@/lib/money"
+import { singleLine } from "@/lib/text"
 
 /*
  * The admin product form, shared by the browser (instant feedback) and the server
@@ -14,10 +16,10 @@ export const PRODUCT_AVAILABILITIES = ["IN_STOCK", "LOW_STOCK", "PREORDER", "OUT
 export type ProductAvailabilityValue = (typeof PRODUCT_AVAILABILITIES)[number]
 
 export const PRODUCT_AVAILABILITY_LABELS: Record<ProductAvailabilityValue, string> = {
-  IN_STOCK: "В наявності",
-  LOW_STOCK: "Закінчується",
-  PREORDER: "Під замовлення",
-  OUT_OF_STOCK: "Немає в наявності",
+  IN_STOCK: AVAILABILITY_LABELS.in_stock,
+  LOW_STOCK: AVAILABILITY_LABELS.low_stock,
+  PREORDER: AVAILABILITY_LABELS.preorder,
+  OUT_OF_STOCK: AVAILABILITY_LABELS.out_of_stock,
 }
 
 export function isProductAvailability(value: unknown): value is ProductAvailabilityValue {
@@ -38,8 +40,6 @@ export const PRODUCT_LIMITS = {
 
 /** The homepage block shows this many products flagged "На головній" */
 export const HOMEPAGE_FEATURED_LIMIT = 4
-
-const singleLine = (value: string) => value.trim().replace(/\s+/g, " ")
 
 const text = (label: string, max: number) =>
   z

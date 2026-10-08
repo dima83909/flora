@@ -3,6 +3,7 @@ import "server-only"
 import { revalidatePath, revalidateTag } from "next/cache"
 import { cache } from "react"
 
+import { pageCountFor } from "@/lib/admin-list"
 import { requireAdmin } from "@/server/admin/auth"
 import { CATALOG_CACHE_TAG } from "@/server/catalog"
 import { addProductImage, deleteProductImage, reorderProductImages } from "@/server/catalog/images"
@@ -12,7 +13,7 @@ import {
   deleteProduct,
   getCategoryOptions,
   getProductById,
-  searchProducts,
+  findAdminProducts,
   updateProduct,
   type AdminProductSearch,
 } from "@/server/catalog/manage"
@@ -40,12 +41,12 @@ function refreshStorefront() {
 export async function listAdminProducts(filters: Omit<AdminProductSearch, "skip" | "take"> & { page: number }) {
   await requireAdmin()
   const { page, ...search } = filters
-  const { products, total } = await searchProducts({
+  const { products, total } = await findAdminProducts({
     ...search,
     skip: (page - 1) * PRODUCTS_PAGE_SIZE,
     take: PRODUCTS_PAGE_SIZE,
   })
-  return { products, total, pageCount: Math.max(1, Math.ceil(total / PRODUCTS_PAGE_SIZE)) }
+  return { products, total, pageCount: pageCountFor(total, PRODUCTS_PAGE_SIZE) }
 }
 
 /** Deduplicated within one render: the edit page's metadata and body both ask for it */

@@ -24,7 +24,7 @@ const startedAt = new Date()
 
 async function place(input: unknown, options?: { ip?: string | null }): Promise<CreateOrderResult> {
   const result = await createGuestOrder(input, options)
-  if (result.ok) created.push(result.number)
+  if (result.ok && !created.includes(result.number)) created.push(result.number)
   return result
 }
 
@@ -170,7 +170,29 @@ async function main() {
   await place({ customer: { ...customer, phone: unluckyPhone }, items: [{ slug: "no-such-product", quantity: 1 }] })
   check((await db.orderAttempt.count({ where: { phone: unluckyPhone } })) === 0, "an order with unavailable items was counted")
 
-  console.log(`Checked guest orders: ${invalid.length + 8} scenarios, ${created.length} test orders created.`)
+  // A retried submission (same checkout key) returns the order placed the first time, uncounted
+  const retryPhone = "+380509990009"
+  const key = crypto.randomUUID()
+  const firstTry = await place({ customer: { ...customer, phone: retryPhone }, items: line, idempotencyKey: key })
+  const retry = await place({ customer: { ...customer, phone: retryPhone }, items: line, idempotencyKey: key })
+  check(firstTry.ok && retry.ok && retry.number === firstTry.number, "a retry with the same key should return the same order")
+  check((await db.order.count({ where: { idempotencyKey: key } })) === 1, "a retry with the same key created another order")
+  check((await db.orderAttempt.count({ where: { phone: retryPhone } })) === 1, "a retry with the same key was counted")
+  const foreign = await place({ customer: { ...customer, phone: "+380509990010" }, items: line, idempotencyKey: key })
+  check(!foreign.ok && foreign.reason === "error", "a key from another phone should be refused")
+
+  // Two copies of one submission arriving at once still make a single order
+  const twinKey = crypto.randomUUID()
+  const twins = await Promise.all(
+    [1, 2].map(() => place({ customer: { ...customer, phone: "+380509990011" }, items: line, idempotencyKey: twinKey }))
+  )
+  check(
+    twins.every((result) => result.ok) && twins[0].ok && twins[1].ok && twins[0].number === twins[1].number,
+    `simultaneous copies of one submission should return one order: ${JSON.stringify(twins)}`
+  )
+  check((await db.order.count({ where: { idempotencyKey: twinKey } })) === 1, "simultaneous copies created two orders")
+
+  console.log(`Checked guest orders: ${invalid.length + 11} scenarios, ${created.length} test orders created.`)
   check((await db.order.count()) === ordersBefore + created.length, "unexpected orders were created")
 }
 

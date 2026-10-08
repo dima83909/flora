@@ -4,30 +4,24 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { SearchIcon } from "lucide-react"
 
+import { ListPagination } from "@/components/admin/list-pagination"
 import { LiveRefresh } from "@/components/admin/live-refresh"
 import { StatusBadge } from "@/components/admin/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { formatMoney, formatPhone, formatShortDate, plural } from "@/lib/admin-format"
+import { formatMoney, formatPhone, formatShortDate } from "@/lib/admin-format"
+import { firstParam, listHref, parsePageParam } from "@/lib/admin-list"
 import { isOrderStatus, ORDER_STATUSES, ORDER_STATUS_LABELS, type OrderStatusValue } from "@/lib/order-status"
+import { normalizeSearchQuery, pluralize } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { requireAdmin } from "@/server/admin/auth"
 import { getAdminOrdersVersion, listAdminOrders } from "@/server/admin/orders"
 
 export const metadata: Metadata = { title: "Замовлення" }
 
-const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)
-
 type Filters = { status?: OrderStatusValue; query: string; page: number }
 
-function ordersHref({ status, query, page }: Partial<Filters>) {
-  const params = new URLSearchParams()
-  if (status) params.set("status", status)
-  if (query) params.set("q", query)
-  if (page && page > 1) params.set("page", String(page))
-  const search = params.toString()
-  return search ? `/admin/orders?${search}` : "/admin/orders"
-}
+const ordersHref = ({ status, query, page }: Partial<Filters>) => listHref("/admin/orders", { status, q: query, page })
 
 const columns =
   "md:grid md:grid-cols-[4.5rem_8.5rem_minmax(0,1.5fr)_minmax(0,1fr)_5.5rem_6.5rem_8rem] md:items-center md:gap-x-4"
@@ -36,12 +30,11 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
   await requireAdmin()
 
   const params = await searchParams
-  const rawStatus = first(params.status)
-  const rawPage = first(params.page) ?? ""
+  const rawStatus = firstParam(params.status)
   const filters: Filters = {
     status: isOrderStatus(rawStatus) ? rawStatus : undefined,
-    query: (first(params.q) ?? "").trim().slice(0, 100),
-    page: /^[1-9]\d{0,5}$/.test(rawPage) ? Number(rawPage) : 1,
+    query: normalizeSearchQuery(firstParam(params.q)),
+    page: parsePageParam(params.page),
   }
 
   // The fingerprint is read first: a change that lands between the two queries triggers one extra refresh, never a missed one
@@ -110,7 +103,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
 
       {filters.query ? (
         <p className="mt-4 text-sm text-ink-soft">
-          За запитом «{filters.query}»: {total} {plural(total, ["замовлення", "замовлення", "замовлень"])}.{" "}
+          За запитом «{filters.query}»: {total} {pluralize(total, ["замовлення", "замовлення", "замовлень"])}.{" "}
           <Link href={ordersHref({ status: filters.status })} className="text-ink underline underline-offset-4">
             Скинути пошук
           </Link>
@@ -183,7 +176,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                     <span className="mt-2 flex items-baseline justify-between gap-3 md:contents">
                       <span className="text-ink-soft tabular-nums">
                         {lines}
-                        <span className="md:hidden"> {plural(lines, ["позиція", "позиції", "позицій"])}</span>
+                        <span className="md:hidden"> {pluralize(lines, ["позиція", "позиції", "позицій"])}</span>
                         <time dateTime={order.createdAt.toISOString()} className="md:hidden">
                           {" · "}
                           {formatShortDate(order.createdAt)}
@@ -201,27 +194,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
         </div>
       )}
 
-      {pageCount > 1 ? (
-        <nav aria-label="Сторінки" className="mt-5 flex items-center justify-between gap-3 text-sm">
-          {filters.page > 1 ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={ordersHref({ ...filters, page: filters.page - 1 })}>Новіші</Link>
-            </Button>
-          ) : (
-            <span />
-          )}
-          <span className="text-ink-soft tabular-nums">
-            Сторінка {filters.page} з {pageCount}
-          </span>
-          {filters.page < pageCount ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={ordersHref({ ...filters, page: filters.page + 1 })}>Давніші</Link>
-            </Button>
-          ) : (
-            <span />
-          )}
-        </nav>
-      ) : null}
+      <ListPagination page={filters.page} pageCount={pageCount} href={(page) => ordersHref({ ...filters, page })} />
     </>
   )
 }

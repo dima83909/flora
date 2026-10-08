@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { MAX_QUANTITY } from "@/lib/cart-limits"
+import { singleLine } from "@/lib/text"
 
 /*
  * Guest order input, shared by the checkout form (instant feedback) and the
@@ -29,9 +30,6 @@ export function normalizePhone(input: string): string | null {
   if (trimmed.startsWith("+") && /^[1-9]\d{7,14}$/.test(digits)) return `+${digits}`
   return null
 }
-
-/** Collapses runs of whitespace so "  Біла  Церква " and "Біла Церква" are stored the same */
-const singleLine = (value: string) => value.trim().replace(/\s+/g, " ")
 
 export const customerSchema = z.object({
   name: z
@@ -97,6 +95,8 @@ export const orderInputSchema = z.object({
   customer: customerSchema,
   /** Honeypot: hidden from people, so only bots fill it in. Must stay empty. */
   website: z.string().max(500).optional(),
+  /** Random per checkout; a retried submission with the same key returns the order already placed */
+  idempotencyKey: z.uuid().optional(),
   items: z
     .array(orderLineSchema)
     .min(1, "Кошик порожній")

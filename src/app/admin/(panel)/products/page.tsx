@@ -6,10 +6,14 @@ import { redirect } from "next/navigation"
 import { Flower2Icon, PlusIcon, SearchIcon } from "lucide-react"
 
 import { AvailabilityBadge } from "@/components/admin/availability-badge"
+import { ListPagination } from "@/components/admin/list-pagination"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { formatMoney, plural } from "@/lib/admin-format"
+import { formatMoney } from "@/lib/admin-format"
+import { firstParam, listHref, parsePageParam } from "@/lib/admin-list"
+import { isRecordId } from "@/lib/ids"
 import { isProductAvailability, PRODUCT_AVAILABILITIES, PRODUCT_AVAILABILITY_LABELS } from "@/lib/product-schema"
+import { normalizeSearchQuery, pluralize } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { requireAdmin } from "@/server/admin/auth"
 import { getAdminCategoryOptions, listAdminProducts } from "@/server/admin/products"
@@ -17,20 +21,10 @@ import type { AdminProductSearch, ProductVisibility } from "@/server/catalog/man
 
 export const metadata: Metadata = { title: "Товари" }
 
-const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)
-
 type Filters = Pick<AdminProductSearch, "categoryId" | "availability" | "visibility"> & { query: string; page: number }
 
-function productsHref({ query, categoryId, availability, visibility, page }: Partial<Filters>) {
-  const params = new URLSearchParams()
-  if (query) params.set("q", query)
-  if (categoryId) params.set("category", categoryId)
-  if (availability) params.set("availability", availability)
-  if (visibility) params.set("visibility", visibility)
-  if (page && page > 1) params.set("page", String(page))
-  const search = params.toString()
-  return search ? `/admin/products?${search}` : "/admin/products"
-}
+const productsHref = ({ query, categoryId, availability, visibility, page }: Partial<Filters>) =>
+  listHref("/admin/products", { q: query, category: categoryId, availability, visibility, page })
 
 const VISIBILITY_LABELS: Record<ProductVisibility, string> = { active: "На сайті", hidden: "Приховані" }
 
@@ -46,16 +40,15 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
   await requireAdmin()
 
   const params = await searchParams
-  const rawCategory = first(params.category)
-  const rawAvailability = first(params.availability)
-  const rawVisibility = first(params.visibility)
-  const rawPage = first(params.page) ?? ""
+  const rawCategory = firstParam(params.category)
+  const rawAvailability = firstParam(params.availability)
+  const rawVisibility = firstParam(params.visibility)
   const filters: Filters = {
-    query: (first(params.q) ?? "").trim().slice(0, 100),
-    categoryId: rawCategory && /^[a-z0-9]{1,100}$/i.test(rawCategory) ? rawCategory : undefined,
+    query: normalizeSearchQuery(firstParam(params.q)),
+    categoryId: isRecordId(rawCategory) ? rawCategory : undefined,
     availability: isProductAvailability(rawAvailability) ? rawAvailability : undefined,
     visibility: isVisibility(rawVisibility) ? rawVisibility : undefined,
-    page: /^[1-9]\d{0,5}$/.test(rawPage) ? Number(rawPage) : 1,
+    page: parsePageParam(params.page),
   }
 
   const [categories, { products, total, pageCount }] = await Promise.all([
@@ -129,7 +122,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
       </Form>
 
       <p className="mt-4 text-sm text-ink-soft">
-        {filtered ? "Знайдено" : "Усього"} {total} {plural(total, ["товар", "товари", "товарів"])}.
+        {filtered ? "Знайдено" : "Усього"} {total} {pluralize(total, ["товар", "товари", "товарів"])}.
         {filtered ? (
           <>
             {" "}
@@ -237,27 +230,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
         </div>
       )}
 
-      {pageCount > 1 ? (
-        <nav aria-label="Сторінки" className="mt-5 flex items-center justify-between gap-3 text-sm">
-          {filters.page > 1 ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={productsHref({ ...filters, page: filters.page - 1 })}>Новіші</Link>
-            </Button>
-          ) : (
-            <span />
-          )}
-          <span className="text-ink-soft tabular-nums">
-            Сторінка {filters.page} з {pageCount}
-          </span>
-          {filters.page < pageCount ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={productsHref({ ...filters, page: filters.page + 1 })}>Давніші</Link>
-            </Button>
-          ) : (
-            <span />
-          )}
-        </nav>
-      ) : null}
+      <ListPagination page={filters.page} pageCount={pageCount} href={(page) => productsHref({ ...filters, page })} />
     </>
   )
 }

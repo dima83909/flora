@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { isRecordId } from "@/lib/ids"
 import { PRODUCT_IMAGE_MAX_BYTES } from "@/lib/product-images"
 import { getCurrentAdmin } from "@/server/admin/auth"
 import { addAdminProductImage } from "@/server/admin/products"
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest, { params }: RouteContext<"/admi
   if (!(await getCurrentAdmin())) return reply(401, "Сесія завершилася. Оновіть сторінку й увійдіть знову.")
 
   const { id } = await params
-  if (!/^[a-z0-9]{1,100}$/i.test(id)) return reply(400, "Некоректний запит.")
+  if (!isRecordId(id)) return reply(400, "Некоректний запит.")
   const length = Number(request.headers.get("content-length"))
   if (!length || length > MAX_BODY_BYTES) return reply(413, "Фото завелике навіть після стиснення.")
 

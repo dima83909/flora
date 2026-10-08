@@ -11,13 +11,12 @@ import { StatusActions } from "@/components/admin/status-actions"
 import { StatusBadge } from "@/components/admin/status-badge"
 import { Button } from "@/components/ui/button"
 import { formatFullDate, formatMoney, formatPhone } from "@/lib/admin-format"
+import { parseOrderNumber } from "@/lib/ids"
 import { requireAdmin } from "@/server/admin/auth"
 import { getAdminOrder } from "@/server/admin/orders"
 
-const parseNumber = (raw: string) => (/^[1-9]\d{0,8}$/.test(raw) ? Number(raw) : null)
-
 export async function generateMetadata({ params }: PageProps<"/admin/orders/[number]">): Promise<Metadata> {
-  const number = parseNumber((await params).number)
+  const number = parseOrderNumber((await params).number)
   return { title: number ? `Замовлення № ${number}` : "Замовлення" }
 }
 
@@ -42,7 +41,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export default async function AdminOrderPage({ params }: PageProps<"/admin/orders/[number]">) {
   await requireAdmin()
 
-  const number = parseNumber((await params).number)
+  const number = parseOrderNumber((await params).number)
   const order = number ? await getAdminOrder(number) : null
   if (!order) notFound()
 

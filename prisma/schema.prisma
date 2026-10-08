@@ -162,6 +162,10 @@ model Order {
   /// Internal note for managers; never shown to the customer
   managerNote String? @map("manager_note")
 
+  /// Random key the checkout sends with each order, so a submission retried after a lost
+  /// response returns the order already placed instead of creating a duplicate
+  idempotencyKey String? @unique @map("idempotency_key") @db.VarChar(64)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

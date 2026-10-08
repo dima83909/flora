@@ -10,9 +10,10 @@ import { GiftArt } from "@/components/brand/gift-art"
 import { useCatalog } from "@/components/catalog/catalog-provider"
 import { ProductImage } from "@/components/shop/product-image"
 import { Button } from "@/components/ui/button"
-import { isPurchasable, pluralize } from "@/lib/catalog"
+import { isPurchasable } from "@/lib/catalog"
 import { customerFieldErrors, customerSchema, ORDER_LIMITS, type CustomerField } from "@/lib/order-schema"
 import { cartActions, useCartLines } from "@/lib/stores/cart"
+import { pluralize } from "@/lib/text"
 import { useHydrated } from "@/lib/use-hydrated"
 import { cn, formatPrice } from "@/lib/utils"
 import type { UnavailableItem } from "@/server/orders/create-order"
@@ -40,6 +41,9 @@ export function CheckoutView() {
   // Keeps the summary on screen while redirecting, after the cart has been cleared
   const [placedLines, setPlacedLines] = useState<Line[] | null>(null)
   const fieldRefs = useRef<Partial<Record<CustomerField, HTMLInputElement | HTMLTextAreaElement | null>>>({})
+  // One key per checkout: if a response is lost and the customer presses "Замовити" again,
+  // the server returns the order it already placed instead of creating a second one
+  const orderKey = useRef<string | null>(null)
 
   const lines: Line[] = placedLines ?? cartLines.map((line) => ({ ...line, product: getProduct(line.slug) }))
   const orderable = lines.filter((line) => line.product && isPurchasable(line.product.availability))
@@ -76,11 +80,15 @@ export function CheckoutView() {
     }
 
     const snapshot = lines
+    // Browsers without randomUUID (very old Safari) simply order without the retry guard
+    orderKey.current ??= typeof crypto.randomUUID === "function" ? crypto.randomUUID() : null
+    const idempotencyKey = orderKey.current ?? undefined
     startTransition(async () => {
       try {
         const result = await placeOrder({
           customer: values,
           website,
+          idempotencyKey,
           items: snapshot.map(({ slug, quantity }) => ({ slug, quantity })),
         })
         if (result.ok) {

@@ -1,5 +1,6 @@
 import "server-only"
 
+import { pageCountFor } from "@/lib/admin-list"
 import type { OrderStatusValue } from "@/lib/order-status"
 import { requireAdmin } from "@/server/admin/auth"
 import {
@@ -32,7 +33,7 @@ export async function listAdminOrders(filters: { status?: OrderStatusValue; quer
     }),
     countOrdersByStatus(filters.query),
   ])
-  return { orders, total, counts, pageCount: Math.max(1, Math.ceil(total / ORDERS_PAGE_SIZE)) }
+  return { orders, total, counts, pageCount: pageCountFor(total, ORDERS_PAGE_SIZE) }
 }
 
 export async function getAdminOrder(number: number) {

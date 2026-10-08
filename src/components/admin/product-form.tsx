@@ -5,7 +5,6 @@ import { startTransition, useActionState, useEffect, useRef, useState } from "re
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { plural } from "@/lib/admin-format"
 import {
   formDiscountPercent,
   HOMEPAGE_FEATURED_LIMIT,
@@ -17,6 +16,7 @@ import {
   type ProductField,
   type ProductFormInput,
 } from "@/lib/product-schema"
+import { pluralize } from "@/lib/text"
 import { cn } from "@/lib/utils"
 import { saveProduct, type ProductFormState } from "@/app/admin/(panel)/products/actions"
 
@@ -423,7 +423,7 @@ export function ProductForm({ product, initialValues, categories, featuredElsewh
             {homepageFull ? (
               <p className="rounded-xl bg-petal/60 p-3 text-sm leading-relaxed text-ink">
                 На головній уже позначено {featuredElsewhere}{" "}
-                {plural(featuredElsewhere, ["інший товар", "інші товари", "інших товарів"])}, а показуються лише{" "}
+                {pluralize(featuredElsewhere, ["інший товар", "інші товари", "інших товарів"])}, а показуються лише{" "}
                 {HOMEPAGE_FEATURED_LIMIT}: перші за порядком каталогу. Зніміть позначку з іншого товару, щоб цей точно потрапив на головну.
               </p>
             ) : null}

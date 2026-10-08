@@ -29,12 +29,12 @@ import {
   filtersToSearch,
   hasActiveFilters,
   parseFilters,
-  pluralize,
   priceRanges,
   type CatalogFilters,
 } from "@/lib/catalog"
 import { useFavorites } from "@/lib/stores/favorites"
 import type { Category, ProductSummary } from "@/types/catalog"
+import { pluralize } from "@/lib/text"
 import { cn } from "@/lib/utils"
 
 const EMPTY_FILTERS: CatalogFilters = {
